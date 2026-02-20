@@ -60,6 +60,17 @@ export interface BackpackTfListing {
   };
 }
 
+export interface ItemAttributes {
+  color: string;
+  lowcraft?: number;
+  strange?: boolean;
+  effect?: number;
+  spelled?: boolean;
+  parts?: boolean;
+  killstreak?: boolean;
+  uncraft?: boolean;
+}
+
 // TF2-specific constants
 export const TF2_APPID = 440;
 export const TF2_CONTEXTID = "2";

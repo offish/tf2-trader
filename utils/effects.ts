@@ -514,3 +514,11 @@ export const UNUSUAL_EFFECT_MAP: Record<string, number> = {
   "Tar Pit": 3210,
   "Morbidly Beast": 3211,
 };
+
+export const getEffectId = (value: string): number => {
+  return UNUSUAL_EFFECT_MAP[value];
+};
+
+export const getEffectURL = (value: number): string => {
+  return `https://itempedia.tf/assets/particles/${value}_94x94.png`;
+};

@@ -1,0 +1,58 @@
+.unusual {
+  background-position: center !important;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+.uncraft {
+  border-style: dashed !important;
+}
+
+.strange:before {
+  content: " ";
+  position: absolute;
+  z-index: 1;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  border: 2px solid rgba(207, 106, 50, 0.5);
+}
+
+.icons img.spell,
+.icons img.parts {
+  width: 14px;
+  height: 20px;
+}
+
+.icons img.ks {
+  width: 14px;
+  height: 15px;
+  padding-top: 5px;
+}
+
+.lowcraft {
+  user-select: none;
+  right: 4%;
+  bottom: 4%;
+  text-align: end;
+  width: 50%;
+  font-size: 16px;
+  z-index: 1;
+  line-height: 1;
+  position: absolute;
+  pointer-events: none;
+}
+
+.icons {
+  position: absolute;
+  pointer-events: none;
+  bottom: 4%;
+  left: 4%;
+  width: 92%;
+  height: 20px;
+}
+
+.icons > * {
+  margin-right: 4%;
+}

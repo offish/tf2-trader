@@ -152,12 +152,6 @@ export function repTfUrl(steamId: string): string {
   return `https://rep.tf/${steamId}`;
 }
 
-export function getUnusualEffectImageUrl(effectName: string): string | null {
-  const effectId = UNUSUAL_EFFECT_MAP[effectName];
-  if (!effectId) return null;
-  return `https://itempedia.tf/assets/particles/${effectName}_94x94.png`;
-}
-
 export async function storageGet<T>(key: string, defaultValue: T): Promise<T> {
   try {
     const result = await browser.storage.local.get(key);
