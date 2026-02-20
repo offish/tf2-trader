@@ -76,7 +76,24 @@ export interface ItemAttributes {
   uncraft?: boolean;
 }
 
-// TF2-specific constants
+export interface ButtonConfig {
+  title: string;
+  url: string;
+  className: string;
+}
+
+export interface ItemProps {
+  classinfo: string;
+  app: string;
+  color: string;
+}
+
+export interface AggregatedItem {
+  el: HTMLElement;
+  count: number;
+  props: ItemProps;
+}
+
 export const TF2_APPID = 440;
 export const TF2_CONTEXTID = "2";
 

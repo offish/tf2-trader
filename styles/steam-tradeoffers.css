@@ -1,0 +1,146 @@
+.btn_user_link {
+  background-position: 14px 0px;
+  background-repeat: no-repeat !important;
+  width: 0;
+  margin-top: -8px;
+  margin-left: 6px;
+  padding-left: 44px;
+  line-height: 30px;
+  float: right;
+}
+
+.btn_user_link:hover {
+  background-position: 14px -30px !important;
+  background-color: #808285;
+}
+
+.rep_btn {
+  background-image: url(https://i.imgur.com/OD9rRAB.png) !important;
+}
+
+.backpack_btn {
+  background-image: url(https://i.imgur.com/8LvnfuX.png) !important;
+}
+
+.tradeoffer_items_summary {
+  position: relative;
+  background-color: #1d1d1d;
+  border: 1px solid #3d3d3e;
+  border-radius: 5px;
+  padding: 17px;
+  margin-top: 8px;
+  width: 100%;
+  font-size: 12px;
+  color: #ffffff;
+  display: flex;
+  box-sizing: border-box;
+}
+
+.items_summary {
+  width: 50%;
+  margin-right: 2.1%;
+  display: inline-block;
+}
+
+.items_summary:last-child {
+  margin-right: 0;
+}
+
+.summary_header {
+  margin-bottom: 12px;
+}
+
+.summary_item {
+  display: inline-block;
+  width: 44px;
+  height: 44px;
+  padding: 3px;
+  margin: 0 2px 2px 0;
+  border: 1px solid;
+  background-color: #3c352e;
+  background-position: center;
+  background-size: 44px 44px;
+  background-repeat: no-repeat;
+}
+
+.summary_badge {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  padding: 1px 3px;
+  color: #ffffff;
+  border-radius: 4px;
+  background-color: #1b2838;
+  font-size: 14px;
+  cursor: default;
+  font-weight: bold;
+}
+
+.unusual {
+  background-position: center !important;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+.uncraft {
+  border-style: dashed !important;
+}
+
+.strange::before {
+  content: " ";
+  position: absolute;
+  z-index: -1;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  border: 2px solid rgba(207, 106, 50, 0.5);
+}
+
+.icons img.spell {
+  width: 14px;
+  height: 20px;
+}
+
+.icons img.parts {
+  width: 14px;
+  height: 20px;
+}
+
+.icons img.ks {
+  width: 14px;
+  height: 15px;
+  padding-top: 5px;
+}
+
+.lowcraft {
+  user-select: none;
+  right: 4%;
+  bottom: 4%;
+  text-align: end;
+  width: 50%;
+  font-size: 16px;
+  z-index: 1;
+  line-height: 1;
+  position: absolute;
+  pointer-events: none;
+}
+
+.icons > * {
+  margin-right: 4%;
+}
+
+.icons {
+  position: absolute;
+  pointer-events: none;
+  bottom: 4%;
+  left: 4%;
+  width: 92%;
+  height: 20px;
+}
+
+.decline_active_button {
+  display: block;
+  margin-top: 0.6em;
+  text-align: center;
+}
