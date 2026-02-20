@@ -1,5 +1,4 @@
 import "@/styles/steam-inventory.css";
-import { addAttributesToElement } from "@/utils/inventory";
 
 export default defineContentScript({
   matches: [
@@ -34,7 +33,6 @@ export default defineContentScript({
       });
     };
 
-    // Main logic: Observer to wait for TF2 inventory to load
     const inventoryContainer = document.getElementById("inventories");
     if (inventoryContainer) {
       const observer = new MutationObserver(() => {
@@ -49,7 +47,6 @@ export default defineContentScript({
           tf2Inv.style.display !== "none" &&
           tf2Inv.querySelectorAll(".item").length > 0
         ) {
-          // Once found, we observe the TF2 inventory specifically for page changes
           const invObserver = new MutationObserver(processInventory);
           invObserver.observe(tf2Inv, { childList: true });
           processInventory();

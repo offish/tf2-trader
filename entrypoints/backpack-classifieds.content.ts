@@ -1,4 +1,5 @@
 import { Currencies } from "@/types";
+
 export default defineContentScript({
   matches: [
     "*://backpack.tf/stats/*",

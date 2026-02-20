@@ -1,4 +1,4 @@
-export const UNUSUAL_EFFECT_MAP: Record<string, number> = {
+export const UNUSUAL_EFFECTS: Record<string, number> = {
   "Invalid Particle": 0,
   "Particle 1": 1,
   "Flying Bits": 2,
@@ -513,12 +513,13 @@ export const UNUSUAL_EFFECT_MAP: Record<string, number> = {
   "Fossil Fueled": 3209,
   "Tar Pit": 3210,
   "Morbidly Beast": 3211,
-};
-
-export const getEffectId = (value: string): number => {
-  return UNUSUAL_EFFECT_MAP[value];
-};
-
-export const getEffectURL = (value: number): string => {
-  return `https://itempedia.tf/assets/particles/${value}_94x94.png`;
+  "Snow Dome": 3214,
+  "Scorching Sensation": 3215,
+  "Burning Sensation": 3216,
+  "Galactic Dust": 3217,
+  "Galactic Cloud": 3218,
+  "Aurora Aura": 3220,
+  "Northern Nights": 3221,
+  "Chilling Mist": 3222,
+  "Circuit Break": 3223,
 };

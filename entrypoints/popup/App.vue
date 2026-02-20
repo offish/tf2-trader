@@ -1,17 +1,14 @@
 <script lang="ts" setup>
-import HelloWorld from '@/components/HelloWorld.vue';
+import Popup from "@/components/Popup.vue";
 </script>
 
 <template>
   <div>
-    <a href="https://wxt.dev" target="_blank">
-      <img src="/wxt.svg" class="logo" alt="WXT logo" />
-    </a>
-    <a href="https://vuejs.org/" target="_blank">
-      <img src="@/assets/vue.svg" class="logo vue" alt="Vue logo" />
+    <a href="https://steamcommunity.com/id/confern" target="_blank">
+      <img src="/logo.svg" class="logo" alt="TF2 Trader Logo" />
     </a>
   </div>
-  <HelloWorld msg="WXT + Vue" />
+  <Popup msg="TF2 Trader" />
 </template>
 
 <style scoped>
@@ -23,8 +20,5 @@ import HelloWorld from '@/components/HelloWorld.vue';
 }
 .logo:hover {
   filter: drop-shadow(0 0 2em #54bc4ae0);
-}
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #42b883aa);
 }
 </style>

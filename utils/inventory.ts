@@ -22,9 +22,9 @@ export const getItemAttributes = (item: any) => {
       desc.color === "ffd700" &&
       desc.value.match(/^\u2605 Unusual Effect: (.+)$/);
     const effectName = effectMatch[1];
-    const effectId = getEffectId(effectName);
+    const effectID = getEffectID(effectName);
 
-    if (effectMatch && effectId) attributes.effect = effectId;
+    if (effectMatch && effectID) attributes.effect = effectID;
 
     if (
       desc.color === "7ea9d1" &&

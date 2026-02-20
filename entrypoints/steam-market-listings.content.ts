@@ -1,6 +1,4 @@
 import "@/styles/steam-market-listings.css";
-import { browser } from "wxt/browser";
-import type { PublicPath } from "wxt/browser";
 
 export default defineContentScript({
   matches: ["*://steamcommunity.com/market/listings/440/*"],
