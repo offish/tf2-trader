@@ -1,5 +1,6 @@
 import { browser } from "wxt/browser";
 import { ItemDescription, SteamItem, TF2_APPID } from "../types";
+import { UNUSUAL_EFFECT_MAP } from "./effects";
 
 export function createElement<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -66,9 +67,10 @@ export function isStrangified(item: SteamItem): boolean {
 
 export function getUnusualEffect(item: SteamItem): string | null {
   if (!item.descriptions) return null;
+  const unusualEffect = "★ Unusual Effect: ";
   for (const desc of item.descriptions) {
-    if (desc.value?.startsWith("★ Unusual Effect: ")) {
-      return desc.value.replace("★ Unusual Effect: ", "");
+    if (desc.value?.startsWith(unusualEffect)) {
+      return desc.value.replace(unusualEffect, "");
     }
   }
   return null;
@@ -150,49 +152,10 @@ export function repTfUrl(steamId: string): string {
   return `https://rep.tf/${steamId}`;
 }
 
-const UNUSUAL_EFFECT_MAP: Record<string, number> = {
-  "Green Confetti": 6,
-  "Purple Confetti": 7,
-  "Haunted Ghosts": 8,
-  "Green Energy": 9,
-  "Purple Energy": 10,
-  "Circling TF Logo": 11,
-  "Massed Flies": 12,
-  "Burning Flames": 13,
-  "Scorching Flames": 14,
-  "Searing Plasma": 15,
-  "Vivid Plasma": 16,
-  Sunbeams: 17,
-  "Circling Peace Sign": 18,
-  "Circling Heart": 19,
-  "Stormy 13th Hour": 29,
-  "Kill-a-Watt": 56,
-  "Terror-Watt": 57,
-  "Cloud 9": 58,
-  "Aces High": 59,
-  "Dead Presidents": 60,
-  "Miami Nights": 61,
-  "Disco Beat Down": 62,
-  Phosphorous: 63,
-  Sulphurous: 64,
-  "Memory Leak": 65,
-  Overclocked: 66,
-  Electrostatic: 67,
-  "Power Surge": 68,
-  "Anti-Freeze": 69,
-  "Time Warp": 70,
-  "Green Black Hole": 71,
-  Roboactive: 72,
-  Arcana: 73,
-  Spellbound: 3000,
-  "Fragmented Gluons": 4006,
-  "Accellerating Gluons": 4007,
-};
-
 export function getUnusualEffectImageUrl(effectName: string): string | null {
   const effectId = UNUSUAL_EFFECT_MAP[effectName];
   if (!effectId) return null;
-  return `https://backpack.tf/images/440/particles/${effectId}_188x188.png`;
+  return `https://itempedia.tf/assets/particles/${effectName}_94x94.png`;
 }
 
 export async function storageGet<T>(key: string, defaultValue: T): Promise<T> {
