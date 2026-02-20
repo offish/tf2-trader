@@ -1,6 +1,6 @@
 {
   "name": "tf2-trader",
-  "description": "Extension for TF2 Traders",
+  "description": "Improve Your Team Fortress 2 Trading Experience",
   "private": true,
   "version": "0.1.0",
   "type": "module",

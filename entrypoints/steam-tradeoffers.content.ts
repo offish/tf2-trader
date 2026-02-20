@@ -1,12 +1,18 @@
 import "@/styles/steam-tradeoffers.css";
 import { ButtonConfig, AggregatedItem } from "@/types";
+import {
+  acceptOffer,
+  declineOffer,
+  isOfferActive,
+  getPartnerID,
+  getOfferID,
+} from "@/utils/offers";
 
 export default defineContentScript({
   matches: [
     "https://steamcommunity.com/id/*/tradeoffers*",
     "https://steamcommunity.com/profiles/*/tradeoffers*",
   ],
-  cssInjectionMode: "manifest",
   main() {
     const REPORT_PATTERN = /ReportTradeScam\( ?'(\d{17})', ?"(.*)"\ ?\)/;
     const BUTTON_CONFIGS: ButtonConfig[] = [
@@ -22,6 +28,108 @@ export default defineContentScript({
       },
     ];
 
+    function resolveBanner(
+      offerEl: HTMLElement,
+      message: string,
+      accepted = false,
+    ): void {
+      const offerContent = offerEl.querySelector<HTMLElement>(
+        ".tradeoffer_items_ctn",
+      );
+      const middleEl = offerContent?.querySelector<HTMLElement>(
+        ".tradeoffer_items_rule",
+      );
+      const footerEl = offerEl.querySelector<HTMLElement>(".tradeoffer_footer");
+
+      if (footerEl) footerEl.style.display = "none";
+      if (offerContent) {
+        offerContent.classList.remove("active");
+        offerContent.classList.add("inactive");
+      }
+      if (middleEl) {
+        if (accepted) middleEl.classList.add("accepted");
+        middleEl.classList.remove("tradeoffer_items_rule");
+        middleEl.classList.add("tradeoffer_items_banner");
+        middleEl.style.height = "";
+        middleEl.innerText = message;
+      }
+    }
+
+    function addAcceptButton(offerEl: HTMLElement): void {
+      if (!isOfferActive(offerEl)) return;
+
+      const offerID = getOfferID(offerEl);
+      const partnerID = getPartnerID(offerEl);
+      const actionsEl = offerEl.querySelector<HTMLElement>(
+        ".tradeoffer_footer_actions",
+      );
+
+      if (!actionsEl) return;
+
+      const acceptSpan = document.createElement("span");
+      acceptSpan.id = `accept_${offerID}`;
+      acceptSpan.className = "whiteLink";
+      acceptSpan.textContent = "Accept Trade";
+
+      const separator = document.createTextNode(" | ");
+
+      actionsEl.prepend(separator);
+      actionsEl.prepend(acceptSpan);
+
+      acceptSpan.addEventListener("click", async () => {
+        try {
+          const res = await acceptOffer(offerID, partnerID);
+          const awaiting =
+            res.needs_email_confirmation || res.needs_mobile_confirmation;
+          resolveBanner(
+            offerEl,
+            awaiting ? "Accepted - Awaiting Confirmation" : "Trade Accepted",
+            !awaiting,
+          );
+        } catch (err) {
+          console.error("Accept offer failed:", err);
+          resolveBanner(
+            offerEl,
+            "Could not accept trade offer, most likely Steam is having problems.",
+          );
+        }
+      });
+    }
+
+    function replaceDeclineButton(offerEl: HTMLElement): void {
+      const actionsEl = offerEl.querySelector<HTMLElement>(
+        ".tradeoffer_footer_actions",
+      );
+      if (!actionsEl) return;
+
+      const links =
+        actionsEl.querySelectorAll<HTMLAnchorElement>("a.whiteLink");
+      const declineAnchor = links[links.length - 1];
+      if (!declineAnchor) return;
+
+      const offerID = getOfferID(offerEl);
+      const declineText = declineAnchor.innerText;
+      declineAnchor.remove();
+
+      const newDeclineSpan = document.createElement("span");
+      newDeclineSpan.className = "whiteLink";
+      newDeclineSpan.textContent = declineText;
+      actionsEl.appendChild(newDeclineSpan);
+
+      newDeclineSpan.addEventListener("click", async () => {
+        try {
+          await declineOffer(offerID);
+          resolveBanner(offerEl, "Trade Declined");
+        } catch (err) {
+          console.error("Decline offer failed:", err);
+          resolveBanner(
+            offerEl,
+            "Could not decline offer, most likely Steam is having problems.",
+          );
+        }
+      });
+    }
+
     function addUserButtons(offerEl: HTMLElement): void {
       const reportButtonEl = offerEl.getElementsByClassName("btn_report")[0] as
         | HTMLElement
@@ -34,7 +142,6 @@ export default defineContentScript({
 
       if (match) {
         const [, steamid, personaname] = match;
-
         const html = buildButtonsHtml(steamid, personaname);
         reportButtonEl.insertAdjacentHTML("beforebegin", html);
       }
@@ -65,14 +172,14 @@ export default defineContentScript({
     const SORT_PRIORITIES = {
       app: ["440", "730"] as string[],
       color: [
-        "rgb(134, 80, 172)", // unusual
-        "rgb(170, 0, 0)", // collectors
-        "rgb(207, 106, 50)", // strange
-        "rgb(56, 243, 171)", // haunted
-        "rgb(77, 116, 85)", // genuine
-        "rgb(71, 98, 145)", // vintage
-        "rgb(250, 250, 250)", // decorated
-        "rgb(125, 109, 0)", // unique
+        "rgb(134, 80, 172)",
+        "rgb(170, 0, 0)",
+        "rgb(207, 106, 50)",
+        "rgb(56, 243, 171)",
+        "rgb(77, 116, 85)",
+        "rgb(71, 98, 145)",
+        "rgb(250, 250, 250)",
+        "rgb(125, 109, 0)",
       ] as string[],
     };
 
@@ -120,11 +227,7 @@ export default defineContentScript({
           map.set(classinfo, {
             el: itemEl,
             count: 1,
-            props: {
-              classinfo,
-              app,
-              color: itemEl.style.borderColor,
-            },
+            props: { classinfo, app, color: itemEl.style.borderColor },
           });
         }
       }
@@ -193,6 +296,8 @@ export default defineContentScript({
       for (const offerEl of offers) {
         addUserButtons(offerEl);
         summarizeItemLists(offerEl);
+        addAcceptButton(offerEl);
+        replaceDeclineButton(offerEl);
       }
     }
 

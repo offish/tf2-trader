@@ -6,7 +6,6 @@ export default defineContentScript({
     "*://steamcommunity.com/profiles/*/inventory*",
   ],
   world: "MAIN",
-
   main() {
     const processInventory = () => {
       const win = window as any;
@@ -34,6 +33,7 @@ export default defineContentScript({
     };
 
     const inventoryContainer = document.getElementById("inventories");
+
     if (inventoryContainer) {
       const observer = new MutationObserver(() => {
         const win = window as any;

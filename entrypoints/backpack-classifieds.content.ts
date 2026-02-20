@@ -1,12 +1,7 @@
 import { Currencies } from "@/types";
 
 export default defineContentScript({
-  matches: [
-    "*://backpack.tf/stats/*",
-    "*://www.backpack.tf/stats/*",
-    "*://backpack.tf/classifieds*",
-    "*://www.backpack.tf/classifieds*",
-  ],
+  matches: ["*://backpack.tf/stats/*", "*://backpack.tf/classifieds*"],
 
   main() {
     const moveClassifiedsToTop = () => {
