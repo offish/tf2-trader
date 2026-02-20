@@ -1,3 +1,5 @@
+import { browser } from "wxt/browser";
+
 const getSessionID = () => {
   const getSessionIDScript =
     "document.querySelector('body').setAttribute('sessionid', g_sessionID);";
@@ -19,7 +21,7 @@ const getUserSteamID = () => {
 const updateLoggedInUserInfo = () => {
   const steamID = getUserSteamID();
   if (steamID !== "false" && steamID !== false && steamID !== null) {
-    chrome.storage.local.set(
+    browser.storage.local.set(
       {
         steamIDOfUser: steamID,
         steamSessionID: getSessionID(),

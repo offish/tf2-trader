@@ -1,8 +1,10 @@
+import { browser } from "wxt/browser";
+
 const acceptOffer = (offerID: string, partnerID: string) => {
   return new Promise((resolve, reject) => {
-    chrome.storage.local.get(["steamSessionID"], ({ steamSessionID }) => {
-      const myHeaders = new Headers();
-      myHeaders.append(
+    browser.storage.local.get(["steamSessionID"], ({ steamSessionID }) => {
+      const headers = new Headers();
+      headers.append(
         "Content-Type",
         "application/x-www-form-urlencoded; charset=UTF-8",
       );
@@ -11,7 +13,7 @@ const acceptOffer = (offerID: string, partnerID: string) => {
         `https://steamcommunity.com/tradeoffer/${offerID}/accept`,
         {
           method: "POST",
-          headers: myHeaders,
+          headers: headers,
           referrer: `https://steamcommunity.com/tradeoffer/${offerID}/`,
           body: `sessionid=${steamSessionID}&serverid=1&tradeofferid=${offerID}&partner=${partnerID}&captcha=`,
         },
@@ -42,9 +44,9 @@ const acceptOffer = (offerID: string, partnerID: string) => {
 
 const declineOffer = (offerID: string) => {
   return new Promise((resolve, reject) => {
-    chrome.storage.local.get(["steamSessionID"], ({ steamSessionID }) => {
-      const myHeaders = new Headers();
-      myHeaders.append(
+    browser.storage.local.get(["steamSessionID"], ({ steamSessionID }) => {
+      const headers = new Headers();
+      headers.append(
         "Content-Type",
         "application/x-www-form-urlencoded; charset=UTF-8",
       );
@@ -53,7 +55,7 @@ const declineOffer = (offerID: string) => {
         `https://steamcommunity.com/tradeoffer/${offerID}/decline`,
         {
           method: "POST",
-          headers: myHeaders,
+          headers: headers,
           body: `sessionid=${steamSessionID}`,
         },
       );

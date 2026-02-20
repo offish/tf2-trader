@@ -1,15 +1,12 @@
-import { defineConfig, defineWebExtConfig } from "wxt";
+import { defineConfig } from "wxt";
 
 // See https://wxt.dev/api/config.html
-const config = defineConfig({
+export default defineConfig({
   modules: ["@wxt-dev/module-vue"],
+  manifest: {
+    permissions: ["storage"],
+  },
+  webExt: {
+    startUrls: ["https://duckduckgo.com/"],
+  },
 });
-
-const webExtConfig = defineWebExtConfig({
-  disabled: true,
-});
-
-export default {
-  ...config,
-  webExt: webExtConfig,
-};
