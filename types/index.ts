@@ -48,6 +48,11 @@ export interface TradeOfferSummary {
   items: Map<string, number>;
 }
 
+export interface Currencies {
+  keys?: number;
+  metal?: number;
+}
+
 export interface BackpackTfListing {
   intent: "buy" | "sell";
   item?: {
