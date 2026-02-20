@@ -1,4 +1,6 @@
 import "@/styles/steam-market-listings.css";
+import { browser } from "wxt/browser";
+import type { PublicPath } from "wxt/browser";
 
 export default defineContentScript({
   matches: ["*://steamcommunity.com/market/listings/440/*"],
@@ -89,6 +91,53 @@ export default defineContentScript({
       observer.observe(resultsRows, { childList: true });
 
       addAttributesToResults();
+    }
+
+    const isCommodityItem =
+      document.querySelector(".market_commodity_order_block") !== null;
+    const appID = "440";
+    const fullName = "Unusual Team Captain";
+    const selector = isCommodityItem
+      ? ".market_commodity_order_block"
+      : "#largeiteminfo_warning";
+
+    const elementToInsertTo = document.querySelector(selector);
+
+    if (elementToInsertTo) {
+      const sites = [
+        {
+          id: "skinport",
+          name: "Skinport.com",
+          url: `https://skinport.com/market/${appID}?search=${fullName}&r=gery`,
+        },
+        {
+          id: "csfloat",
+          name: "CSFloat Market",
+          url: `https://csfloat.com/search?market_hash_name=${fullName}&ref=gerytrading`,
+        },
+      ];
+
+      const adsHtml = sites
+        .map(
+          (site) => `
+            <div class="site_ad">
+              <a href="${site.url}" target="_blank" class="site_ad_link">
+                <img alt="${site.name}" style="height: 50px" src="">
+                <br>${site.name}
+              </a>
+            </div>
+          `,
+        )
+        .join("");
+
+      elementToInsertTo.insertAdjacentHTML(
+        "beforebegin",
+        `<div>
+          <span class="sites_ad_title">You can save 20-35% by buying this item on one of these trusted marketplaces for real money:</span>
+          <div class="site_ads">
+            ${adsHtml}
+          </div>`,
+      );
     }
   },
 });

@@ -8,6 +8,22 @@ export default defineContentScript({
   ],
 
   main() {
+    const moveClassifiedsToTop = () => {
+      const classifieds = document.querySelector("#classifieds");
+
+      if (!classifieds) return;
+
+      const parentPanel = classifieds.closest(".stats-body");
+      const relatedGutter = classifieds.nextElementSibling;
+
+      if (parentPanel) {
+        if (relatedGutter && relatedGutter.classList.contains("guttered")) {
+          parentPanel.prepend(relatedGutter);
+        }
+        parentPanel.prepend(classifieds);
+      }
+    };
+
     const stringToCurrencies = (str: string | undefined): Currencies | null => {
       if (!str) return null;
 
@@ -89,6 +105,7 @@ export default defineContentScript({
       subtree: true,
     });
 
+    moveClassifiedsToTop();
     processListings();
   },
 });

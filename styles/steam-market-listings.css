@@ -56,3 +56,24 @@
 .icons > * {
   margin-right: 4%;
 }
+
+.sites_ad_title {
+  font-size: 1.25em;
+  color: #cde46f;
+}
+
+.site_ads {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 10px;
+}
+
+.site_ad {
+  text-align: center;
+  margin: 0 20px 0 20px;
+}
+
+.site_ad_link {
+  font-size: 1.1rem;
+}
