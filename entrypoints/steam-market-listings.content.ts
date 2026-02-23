@@ -83,6 +83,30 @@ export default defineContentScript({
       });
     };
 
+    function getItemNameFromUrl(): string | null {
+      try {
+        // Get the current window location
+        const url = new URL(window.location.href);
+
+        // Split the pathname: /market/listings/440/Unusual%20Team%20Captain
+        const pathParts = url.pathname.split("/");
+
+        // The item name is the last part of the path
+        const lastPart = pathParts[pathParts.length - 1];
+
+        if (lastPart) {
+          // decodeURIComponent converts "%20" back into spaces
+          const itemName = decodeURIComponent(lastPart);
+          console.log("Extracted Item Name:", itemName);
+          return itemName;
+        }
+      } catch (e) {
+        console.error("Failed to parse name from URL", e);
+      }
+
+      return null;
+    }
+
     const resultsRows = document.getElementById("searchResultsRows");
     if (resultsRows) {
       const observer = new MutationObserver(addAttributesToResults);
@@ -93,8 +117,7 @@ export default defineContentScript({
 
     const isCommodityItem =
       document.querySelector(".market_commodity_order_block") !== null;
-    const appID = "440";
-    const fullName = "Unusual Team Captain";
+    const fullName = getItemNameFromUrl();
     const selector = isCommodityItem
       ? ".market_commodity_order_block"
       : "#largeiteminfo_warning";
@@ -106,35 +129,69 @@ export default defineContentScript({
         {
           id: "skinport",
           name: "Skinport.com",
-          url: `https://skinport.com/market/${appID}?search=${fullName}&r=gery`,
+          url: `https://skinport.com/market/440?search=${fullName}&r=guidetf`,
+          icon: "https://skinport.com/favicon.ico",
         },
         {
-          id: "csfloat",
-          name: "CSFloat Market",
-          url: `https://csfloat.com/search?market_hash_name=${fullName}&ref=gerytrading`,
+          id: "manncostore",
+          name: "ManncoStore",
+          url: "https://mannco.store/?ref=guidetf",
+          icon: "https://mannco.store/statics/img/logo.svg",
+        },
+        {
+          id: "tradeit",
+          name: "Tradeit.gg",
+          url: "https://tradeit.gg/tf2/trade?aff=guide",
+          icon: "https://tradeit.gg/images/logo-full.svg",
+        },
+        {
+          id: "marketplacetf",
+          name: "MarketplaceTF",
+          url: "https://marketplace.tf/",
+          icon: "https://marketplace.tf/favicon.ico",
+        },
+        {
+          id: "merchanttf",
+          name: "MerchantTF",
+          url: "https://merchant.tf/r/guide",
+          icon: "https://merchant.tf/favicon.ico",
+        },
+        {
+          id: "cstrade",
+          name: "CS.TRADE",
+          url: "https://cs.trade/ref/TF2GUIDES",
+          icon: "https://cs.trade/favicon.ico",
+        },
+        {
+          id: "skinscash",
+          name: "SkinsCash",
+          url: "https://skins.cash/user/ref/76561198253325712",
+          icon: "https://skins.cash/favicon.ico",
         },
       ];
-
       const adsHtml = sites
         .map(
           (site) => `
-            <div class="site_ad">
-              <a href="${site.url}" target="_blank" class="site_ad_link">
-                <img alt="${site.name}" style="height: 50px" src="">
-                <br>${site.name}
-              </a>
+        <div class="site_ad">
+          <a href="${site.url}" target="_blank" class="site_ad_link">
+            <div class="site_ad_icon_wrapper">
+              <img alt="${site.name}" src="${site.icon}">
             </div>
-          `,
+            <span class="site_ad_name">${site.name}</span>
+          </a>
+        </div>
+      `,
         )
         .join("");
 
       elementToInsertTo.insertAdjacentHTML(
         "beforebegin",
-        `<div>
-          <span class="sites_ad_title">You can save 20-35% by buying this item on one of these trusted marketplaces for real money:</span>
-          <div class="site_ads">
-            ${adsHtml}
-          </div>`,
+        `<div class="referral-container">
+      <span class="sites_ad_title">You can save 20-35% by buying this item on these trusted marketplaces:</span>
+      <div class="site_ads">
+        ${adsHtml}
+      </div>
+    </div>`,
       );
     }
   },

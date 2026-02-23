@@ -64,16 +64,31 @@
 
 .site_ads {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
+  align-items: flex-start;
   justify-content: center;
-  margin: 10px;
+  gap: 25px;
+  margin: 10px auto;
+  max-width: 100%;
 }
 
 .site_ad {
   text-align: center;
-  margin: 0 20px 0 20px;
+  flex: 0 0 auto;
 }
 
 .site_ad_link {
   font-size: 1.1rem;
+  text-decoration: none;
+  color: inherit;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.site_ad_link img {
+  display: block;
+  margin: 0 auto 5px;
+  height: 50px;
+  max-width: 100%;
+  object-fit: contain;
 }
