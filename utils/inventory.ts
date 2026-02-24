@@ -1,7 +1,37 @@
+const TAG_TO_QUALITY: Record<string, number> = {
+  Normal: 0,
+  Genuine: 1,
+  Vintage: 3,
+  Unusual: 5,
+  Unique: 6,
+  Community: 7,
+  Valve: 8,
+  "Self-Made": 9,
+  Strange: 11,
+  Haunted: 13,
+  "Collector's": 14,
+};
+
+const getQualityFromTags = (item: any): number => {
+  if (!item.tags) return 6;
+  const qualityTag = item.tags.find((tag: any) => tag.category === "Quality");
+  if (!qualityTag) return 6;
+  return (
+    TAG_TO_QUALITY[qualityTag.localized_tag_name] ??
+    TAG_TO_QUALITY[qualityTag.internal_name] ??
+    6
+  );
+};
+
 export const getItemAttributes = (item: any) => {
-  const attributes: any = { color: (item.name_color || "").toUpperCase() };
-  const isUnique = attributes.color === "7D6D00";
-  const isStrangeQuality = attributes.color === "CF6A32";
+  const color = (item.name_color || "").toUpperCase();
+  const attributes: any = {
+    color,
+    quality: getQualityFromTags(item),
+  };
+
+  const isUnique = attributes.quality === 6;
+  const isStrangeQuality = attributes.quality === 11;
   const matchesLowcraft = item.name?.match(/.* #(\d+)$/);
   const hasStrangeItemType =
     /^Strange /.test(item.market_hash_name) &&
@@ -11,9 +41,7 @@ export const getItemAttributes = (item: any) => {
     );
 
   if (matchesLowcraft) attributes.lowcraft = parseInt(matchesLowcraft[1]);
-
   if (!isStrangeQuality && hasStrangeItemType) attributes.strange = true;
-
   if (!item.descriptions) return attributes;
 
   item.descriptions.forEach((desc: any) => {
@@ -21,10 +49,12 @@ export const getItemAttributes = (item: any) => {
       !isUnique &&
       desc.color === "ffd700" &&
       desc.value.match(/^\u2605 Unusual Effect: (.+)$/);
-    const effectName = effectMatch[1];
-    const effectID = getEffectID(effectName);
 
-    if (effectMatch && effectID) attributes.effect = effectID;
+    if (effectMatch) {
+      const effectName = effectMatch[1];
+      const effectID = getEffectID(effectName);
+      if (effectID) attributes.effect = effectID;
+    }
 
     if (
       desc.color === "7ea9d1" &&
@@ -74,24 +104,29 @@ export const addAttributesToElement = (itemEl: HTMLElement, item: any) => {
     itemEl.appendChild(div);
   }
 
-  const addIcon = (src: string, cls: string) => {
+  const addIcon = (src: string, cls: string, w: number, h: number) => {
     const img = document.createElement("img");
     img.src = src;
     img.className = cls;
+    img.width = w;
+    img.height = h;
+    img.style.objectFit = "contain";
+    img.style.display = "inline-block";
+    img.style.verticalAlign = "top";
     iconsEl.appendChild(img);
   };
 
-  if (attrs.spelled) addIcon("https://scrap.tf/img/spell.png", "spell");
-
-  if (attrs.parts) addIcon("https://itempedia.tf/assets/wrench.png", "parts");
-
+  if (attrs.spelled) addIcon("https://scrap.tf/img/spell.png", "spell", 14, 20);
+  if (attrs.parts)
+    addIcon("https://itempedia.tf/assets/wrench.png", "parts", 14, 20);
   if (attrs.killstreak)
-    addIcon("https://itempedia.tf/assets/icon-ks.png", "ks");
-
+    addIcon("https://itempedia.tf/assets/icon-ks.png", "ks", 14, 15);
   if (iconsEl.children.length > 0) {
     iconsEl.className = "icons";
     itemEl.appendChild(iconsEl);
   }
+
+  itemEl.style.position = "relative";
 
   if (classes.length > 0) itemEl.classList.add(...classes);
   itemEl.setAttribute("data-checked", "1");
