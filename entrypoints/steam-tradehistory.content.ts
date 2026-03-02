@@ -1,3 +1,5 @@
+import "@/styles/steam-tradehistory.css";
+
 export default defineContentScript({
   matches: [
     "*://steamcommunity.com/*/tradehistory*",
@@ -6,32 +8,6 @@ export default defineContentScript({
   runAt: "document_end",
 
   main() {
-    const style = document.createElement("style");
-    style.textContent = `
-        .tradehistory_items {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: flex-start;
-            gap: 10px;
-        }
-        .tradehistory_items_plusminus {
-            flex: 0 0 auto;
-            font-size: 16px;
-            font-weight: bold;
-            margin-right: 5px;
-        }
-        .tradehistory_items_group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            flex: 1;
-        }
-        .history_item {
-            flex: 0 0 auto;
-        }
-    `;
-    document.head.appendChild(style);
-
     interface ItemDetails {
       count: number;
       links: string[];
@@ -79,18 +55,21 @@ export default defineContentScript({
       });
 
       let newContent = "";
+
       itemMap.forEach((details, name) => {
+        const count = details.count > 1 ? ` x${details.count}` : ``;
+
         if (isReceived) {
           const firstLink = details.links[0] || "";
           newContent += `
             <a class="history_item economy_item_hoverable" href="${firstLink}">
               <img src="${details.imgSrc}" style="${details.imgStyle}" class="tradehistory_received_item_img">
-              <span class="history_item_name" style="${details.style}">${name} x${details.count}</span>
+              <span class="history_item_name" style="${details.style}">${name + count}</span>
             </a>`;
         } else {
           newContent += `
             <span class="history_item economy_item_hoverable">
-              <span class="history_item_name" style="${details.style}">${name} x${details.count}</span>
+              <span class="history_item_name" style="${details.style}">${name + count}</span>
             </span>`;
         }
       });
@@ -100,17 +79,20 @@ export default defineContentScript({
 
     const processTradeHistory = (): void => {
       const tradeRows = document.querySelectorAll(".tradehistoryrow");
+
       tradeRows.forEach((row) => {
         if (row.classList.contains("combined-done")) return;
 
         const receivedItems = row.querySelector<HTMLElement>(
           ".tradehistory_items_withimages",
         );
+
         if (receivedItems) combineItems(receivedItems, true);
 
         const givenItems = row.querySelector<HTMLElement>(
           ".tradehistory_items_noimages",
         );
+
         if (givenItems) combineItems(givenItems, false);
 
         row.classList.add("combined-done");
@@ -121,7 +103,5 @@ export default defineContentScript({
 
     const observer = new MutationObserver(() => processTradeHistory());
     observer.observe(document.body, { childList: true, subtree: true });
-
-    console.log("Steam Trade History Light Mode: Active");
   },
 });

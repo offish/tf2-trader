@@ -1,0 +1,24 @@
+.tradehistory_items {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.tradehistory_items_plusminus {
+  flex: 0 0 auto;
+  font-size: 16px;
+  font-weight: bold;
+  margin-right: 5px;
+}
+
+.tradehistory_items_group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex: 1;
+}
+
+.history_item {
+  flex: 0 0 auto;
+}

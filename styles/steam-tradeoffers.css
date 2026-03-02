@@ -1,10 +1,10 @@
 .btn_user_link {
-  background-position: 14px 0px;
   background-repeat: no-repeat !important;
-  width: 0;
+  background-position: 14px 0px !important;
+  width: 44px !important;
+  min-width: 44px !important;
   margin-top: -8px;
   margin-left: 6px;
-  padding-left: 44px;
   line-height: 30px;
   float: right;
 }
@@ -70,7 +70,7 @@
   padding: 1px 3px;
   color: #ffffff;
   border-radius: 4px;
-  background-color: #1b2838;
+  background-color: rgba(0, 0, 0, 0.8);
   font-size: 14px;
   cursor: default;
   font-weight: bold;

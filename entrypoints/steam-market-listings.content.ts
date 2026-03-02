@@ -31,9 +31,9 @@ export default defineContentScript({
     }) => {
       const win = window as any;
       const assets = win.g_rgAssets;
-      return assets?.[ids.appid]?.[ids.contextid]?.[ids.assetid];
+      const asset = assets?.[ids.appid]?.[ids.contextid]?.[ids.assetid];
+      return asset;
     };
-
     const addAttributesToResults = () => {
       const resultsRows = document.getElementById("searchResultsRows");
 
@@ -77,7 +77,10 @@ export default defineContentScript({
 
           itemImgEl.parentNode?.replaceChild(itemWrapper, itemImgEl);
           itemWrapper.appendChild(itemImgEl);
-          addAttributesToElement(itemWrapper, asset);
+          addAttributesToElement(
+            itemWrapper,
+            asset.descriptions ? asset : asset,
+          );
           rowEl.setAttribute("data-checked", "1");
         }
       });
@@ -85,17 +88,11 @@ export default defineContentScript({
 
     function getItemNameFromUrl(): string | null {
       try {
-        // Get the current window location
         const url = new URL(window.location.href);
-
-        // Split the pathname: /market/listings/440/Unusual%20Team%20Captain
         const pathParts = url.pathname.split("/");
-
-        // The item name is the last part of the path
         const lastPart = pathParts[pathParts.length - 1];
 
         if (lastPart) {
-          // decodeURIComponent converts "%20" back into spaces
           const itemName = decodeURIComponent(lastPart);
           console.log("Extracted Item Name:", itemName);
           return itemName;

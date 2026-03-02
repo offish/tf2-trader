@@ -43,24 +43,24 @@ const injectPricedbButton = (assetId: string) => {
   link.textContent = "🔍 Check on PriceDB.IO";
   link.setAttribute("data-asset", assetId);
   link.style.cssText = `
-  display: block;
-  width: 100%;
-  padding: 8px 12px;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 4px;
-  color: #ffffff !important;
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none !important;
-  text-align: center;
-  cursor: pointer;
-  box-sizing: border-box;
-  transition: background 0.2s ease, border-color 0.2s ease;
-  pointer-events: all !important;
-  position: relative;
-  z-index: 999;
-`;
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 4px;
+    color: #ffffff !important;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none !important;
+    text-align: center;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: background 0.2s ease, border-color 0.2s ease;
+    pointer-events: all !important;
+    position: relative;
+    z-index: 999;
+  `;
 
   link.addEventListener("mouseenter", () => {
     link.style.background = "linear-gradient(135deg, #0f3460 0%, #1a1a2e 100%)";

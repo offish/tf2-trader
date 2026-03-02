@@ -13,14 +13,29 @@ const TAG_TO_QUALITY: Record<string, number> = {
 };
 
 const getQualityFromTags = (item: any): number => {
-  if (!item.tags) return 6;
-  const qualityTag = item.tags.find((tag: any) => tag.category === "Quality");
-  if (!qualityTag) return 6;
-  return (
-    TAG_TO_QUALITY[qualityTag.localized_tag_name] ??
-    TAG_TO_QUALITY[qualityTag.internal_name] ??
-    6
-  );
+  if (item.tags) {
+    const qualityTag = item.tags.find((tag: any) => tag.category === "Quality");
+    if (qualityTag) {
+      return (
+        TAG_TO_QUALITY[qualityTag.localized_tag_name] ??
+        TAG_TO_QUALITY[qualityTag.internal_name] ??
+        6
+      );
+    }
+  }
+
+  const COLOR_TO_QUALITY: Record<string, number> = {
+    "4D7455": 1,
+    "476291": 3,
+    "8650AC": 5,
+    "7D6D00": 6,
+    CF6A32: 11,
+    "38F3AB": 13,
+    FAFAFA: 15,
+  };
+
+  const color = (item.name_color || "").toUpperCase();
+  return COLOR_TO_QUALITY[color] ?? 6;
 };
 
 export const getItemAttributes = (item: any) => {
@@ -126,7 +141,7 @@ export const addAttributesToElement = (itemEl: HTMLElement, item: any) => {
     itemEl.appendChild(iconsEl);
   }
 
-  itemEl.style.position = "relative";
+  // itemEl.style.position = "relative";
 
   if (classes.length > 0) itemEl.classList.add(...classes);
   itemEl.setAttribute("data-checked", "1");

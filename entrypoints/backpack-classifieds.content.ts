@@ -50,6 +50,55 @@ export default defineContentScript({
       return Object.keys(currencies).length === 0 ? null : currencies;
     };
 
+    function getSkuFromMarketplaceLink(): string | null {
+      const anchor = document.querySelector<HTMLAnchorElement>(
+        'a.price-box[href*="marketplace.tf/partneritem"]',
+      );
+
+      if (!anchor) return null;
+
+      try {
+        const url = new URL(anchor.href);
+        return url.searchParams.get("sku");
+      } catch (e) {
+        console.error("Failed to parse Marketplace.tf URL", e);
+        return null;
+      }
+    }
+
+    function insertGraph() {
+      if (document.getElementById("pricedb-graph-wrapper")) return;
+
+      const sku = getSkuFromMarketplaceLink();
+
+      if (!sku) {
+        console.warn("[pricedb-graph] Could not find SKU on this page.");
+        return;
+      }
+
+      const wrapper = document.createElement("div");
+      wrapper.id = "pricedb-graph-wrapper";
+      wrapper.style.margin = "20px 0";
+
+      wrapper.innerHTML = `
+      <iframe
+          src="https://pricedb.io/api/graph/${sku}"
+          style="width: 100%; height: 500px; border: none; background: #1b1b1b; margin: 10px 0; border-radius: 4px; border: 1px solid #222;"
+      ></iframe>
+      `;
+
+      const nativeGraphSection = document.querySelector(
+        ".guttered:has(.stats-graph)",
+      );
+
+      if (nativeGraphSection) {
+        nativeGraphSection.before(wrapper);
+      } else {
+        const fallbackHeader = document.querySelector("h2");
+        fallbackHeader?.before(wrapper);
+      }
+    }
+
     const processListings = () => {
       const listings = document.getElementsByClassName("listing");
 
@@ -101,7 +150,11 @@ export default defineContentScript({
       subtree: true,
     });
 
-    moveClassifiedsToTop();
+    if (window.location.pathname.includes("/stats/")) {
+      moveClassifiedsToTop();
+      insertGraph();
+    }
+
     processListings();
   },
 });
