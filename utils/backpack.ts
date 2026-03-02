@@ -56,7 +56,9 @@ export const getKeysListedValue = (items: HTMLElement[], keyValue: number) => {
   return refinedToKeys(totalRef, keyValue);
 };
 
-const stringToCurrencies = (str: string | undefined): Currencies | null => {
+export const stringToCurrencies = (
+  str: string | undefined,
+): Currencies | null => {
   if (!str) return null;
 
   const cleaned = str.trim().replace(/\s+/g, " ");
@@ -87,7 +89,7 @@ export const processListings = () => {
 
   listings.forEach((el) => {
     const listingEl = el as HTMLElement;
-    if (listingEl.hasAttribute("data-params-added")) return;
+    if (listingEl.hasAttribute("data-bp-processed")) return;
 
     let offerButtonEl: HTMLAnchorElement | null = null;
     let currencies: Currencies | null = null;
@@ -97,7 +99,9 @@ export const processListings = () => {
       const actionsWrapper = listingEl.querySelector(
         ".listing__details__actions",
       );
-      offerButtonEl = actionsWrapper?.lastElementChild as HTMLAnchorElement;
+      offerButtonEl = actionsWrapper?.querySelector(
+        "a.listing__details__actions__action",
+      ) as HTMLAnchorElement;
 
       const intentEl = listingEl.querySelector(
         ".listing__details__header .text-sell, .listing__details__header .text-buy",
@@ -105,7 +109,11 @@ export const processListings = () => {
       intent = intentEl?.classList.contains("text-sell") ? "sell" : "buy";
 
       const priceEl = listingEl.querySelector(".item__price");
-      currencies = stringToCurrencies(priceEl?.textContent || "");
+      if (priceEl) {
+        const priceClone = priceEl.cloneNode(true) as HTMLElement;
+        priceClone.querySelector("svg")?.remove();
+        currencies = stringToCurrencies(priceClone.textContent?.trim() || "");
+      }
     } else {
       const itemEl = listingEl.querySelector(".item") as HTMLElement;
       offerButtonEl = listingEl.querySelector(".listing-buttons")
@@ -119,6 +127,7 @@ export const processListings = () => {
 
     const href = offerButtonEl?.href || offerButtonEl?.getAttribute("href");
     if (!offerButtonEl || !href || href.startsWith("steam://") || !currencies) {
+      listingEl.setAttribute("data-bp-processed", "1");
       return;
     }
 
@@ -139,9 +148,9 @@ export const processListings = () => {
         );
 
       offerButtonEl.href = url.toString();
-      listingEl.setAttribute("data-params-added", "1");
     } catch (e) {
-      listingEl.setAttribute("data-params-added", "1");
+    } finally {
+      listingEl.setAttribute("data-bp-processed", "1");
     }
   });
 };

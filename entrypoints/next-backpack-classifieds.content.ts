@@ -1,7 +1,7 @@
 import { processListings } from "@/utils/backpack";
 
 export default defineContentScript({
-  matches: ["*://next.backpack.tf/stats*", "*://next.backpack.tf/classifieds*"],
+  matches: ["*://next.backpack.tf/classifieds*"],
 
   main() {
     const contentWrapper =
