@@ -80,19 +80,34 @@ export const getItemAttributes = (item: any) => {
     if (desc.color === "756b5e" && desc.value.match(/^\(?(.+?):\s*\d+\)?$/))
       attributes.parts = true;
 
-    if (desc.color === "7ea9d1" && desc.value === "Killstreaks Active")
-      attributes.killstreak = true;
-
-    if (!desc.color && /^\( Not.* Usable in Crafting/.test(desc.value))
-      attributes.uncraft = true;
-
-    if (
-      !isStrangeQuality &&
-      desc.color?.toUpperCase() === "CF6A32" &&
-      desc.value.trim() === "Strange Stat Clock Attached"
-    )
-      attributes.strange = true;
+    if (desc.color === "7ea9d1" && desc.value === "Killstreaks Active") {
+      // Detect tier from market_hash_name / name so the SKU is kt-1/kt-2/kt-3.
+      const itemName: string = item.market_hash_name || item.name || "";
+      if (/Professional Killstreak/i.test(itemName)) attributes.killstreak = 3;
+      else if (/Specialized Killstreak/i.test(itemName)) attributes.killstreak = 2;
+      else attributes.killstreak = 1;
+    }
   });
+
+  // Series number for crates/cases — stored as a "Series" tag.
+  // localized_tag_name is typically "#148"; internal_name is "series_148".
+  if (item.tags) {
+    const seriesTag = item.tags.find((tag: any) => tag.category === "Series");
+    if (seriesTag) {
+      const fromLabel = (seriesTag.localized_tag_name as string ?? "").match(/#(\d+)/);
+      const fromInternal = (seriesTag.internal_name as string ?? "").match(/(\d+)$/);
+      const num = fromLabel ? parseInt(fromLabel[1]) : fromInternal ? parseInt(fromInternal[1]) : null;
+      if (num) attributes.series = num;
+    }
+  }
+
+  // Also try parsing the series from market_hash_name (e.g. "Cosmetic Case #148").
+  // This covers cases where the tag is absent but the market name has it.
+  if (!attributes.series) {
+    const mhn: string = item.market_hash_name ?? "";
+    const mhnMatch = mhn.match(/#(\d+)$/);
+    if (mhnMatch) attributes.series = parseInt(mhnMatch[1]);
+  }
 
   return attributes;
 };
@@ -145,4 +160,37 @@ export const addAttributesToElement = (itemEl: HTMLElement, item: any) => {
 
   if (classes.length > 0) itemEl.classList.add(...classes);
   itemEl.setAttribute("data-checked", "1");
+};
+
+// -------------------------------------------------------------------------
+// SKU building
+// -------------------------------------------------------------------------
+
+/**
+ * Builds a PriceDB/tf2-schema SKU string from a defindex and parsed item attributes.
+ * e.g. "5021;6", "725;5;u703", "5021;6;uncraftable"
+ */
+export const buildSku = (defindex: string | number, item: any): string => {
+  const parts: (string | number)[] = [defindex, item.quality ?? 6];
+  if (item.uncraft) parts.push("uncraftable");
+  if (item.killstreak) parts.push(`kt-${item.killstreak}`);
+  if (item.effect) parts.push(`u${item.effect}`);
+  if (item.series) parts.push(`c${item.series}`);
+  return parts.join(";");
+};
+
+/**
+ * Extracts the defindex from a Steam item description by parsing the wiki
+ * itemredirect URL embedded in the item's actions array.
+ * Returns null if no wiki link is found.
+ */
+export const getDefindexFromDesc = (desc: any): string | null => {
+  if (!desc?.actions) return null;
+  for (const action of desc.actions) {
+    const match = (action.link as string | undefined)?.match(
+      /itemredirect\.php\?id=(\d+)/,
+    );
+    if (match) return match[1];
+  }
+  return null;
 };
