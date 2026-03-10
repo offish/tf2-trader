@@ -1,3 +1,54 @@
+export const QUALITY_COLORS: Record<number, string> = {
+  0: "#B2B2B2", // Normal
+  1: "#4D7455", // Genuine
+  3: "#476291", // Vintage
+  5: "#8650AC", // Unusual
+  6: "#FFD700", // Unique
+  7: "#70B04A", // Community
+  8: "#A50F79", // Valve
+  9: "#70B04A", // Self-Made
+  11: "#CF6A32", // Strange
+  13: "#38F3AB", // Haunted
+  14: "#AA0000", // Collector's
+  15: "#FAFAFA", // Decorated Weapon
+};
+
+export const TAG_TO_QUALITY: Record<string, number> = {
+  Normal: 0,
+  Genuine: 1,
+  Vintage: 3,
+  Unusual: 5,
+  Unique: 6,
+  Community: 7,
+  Valve: 8,
+  "Self-Made": 9,
+  Strange: 11,
+  Haunted: 13,
+  "Collector's": 14,
+  "Decorated Weapon": 15,
+};
+
+export const QUALITY_NAMES: Record<number, string> = {
+  0: "Normal",
+  1: "Genuine",
+  3: "Vintage",
+  5: "Unusual",
+  6: "Unique",
+  7: "Community",
+  8: "Valve",
+  9: "Self-Made",
+  11: "Strange",
+  13: "Haunted",
+  14: "Collector's",
+  15: "Decorated Weapon",
+};
+
+export const KILLSTREAK_TIER_NAMES: Record<number, string> = {
+  1: "Killstreak",
+  2: "Specialized Killstreak",
+  3: "Professional Killstreak",
+};
+
 export const UNUSUAL_EFFECTS: Record<string, number> = {
   "Invalid Particle": 0,
   "Particle 1": 1,

@@ -1,4 +1,4 @@
-import { UNUSUAL_EFFECTS } from "./effects";
+import { UNUSUAL_EFFECTS } from "./data";
 
 export const getEffectID = (value: string): number => {
   return UNUSUAL_EFFECTS[value];
