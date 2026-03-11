@@ -1,8 +1,22 @@
-# TF2 Trader
+<p align="center">
+  <img src="https://raw.githubusercontent.com/offish/tf2-trader/refs/heads/main/public/logo.svg" width="128">
+</p>
 
-Extension for Team Fortress 2 Trading.
+<h1 align="center">TF2 Trader</h1>
 
-Built using WXT and Vue 3.
+<p align="center">
+  Extension for Team Fortress 2 Trading.<br>
+  Built using WXT and Vue 3.
+</p>
+
+<p align="center">
+  <a href="https://chromewebstore.google.com/detail/tf2-trader/gmicpekfpbikhibodgokfpghadkclhoe">
+    <img src=".github/images/chrome.png" height="60">
+  </a>
+  <!-- <a href="https://addons.mozilla.org/firefox/addon/">
+    <img src=".github/images/firefox.png" height="60">
+  </a> -->
+</p>
 
 ## Features
 
