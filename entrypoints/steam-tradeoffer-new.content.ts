@@ -315,8 +315,7 @@ export default defineContentScript({
     // Helpers
     // -------------------------------------------------------------------------
 
-    const waitFor = (ms: number) =>
-      new Promise((res) => setTimeout(res, ms));
+    const waitFor = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
     async function waitForGlobal<T>(
       getter: () => T | undefined,
@@ -368,9 +367,7 @@ export default defineContentScript({
           if (d.value === "( Not Usable in Crafting )") {
             name = "Non-Craftable " + name;
           } else if (d.value.startsWith("\u2605 Unusual Effect: ")) {
-            const effect = d.value.substring(
-              "\u2605 Unusual Effect: ".length,
-            );
+            const effect = d.value.substring("\u2605 Unusual Effect: ".length);
             name = name.replace("Unusual", effect);
           }
         }
@@ -435,7 +432,12 @@ export default defineContentScript({
     }
 
     async function loadBothInventories(): Promise<
-      [ParsedItem[], ParsedItem[], Record<string, SteamRgEntry>, Record<string, SteamRgEntry>]
+      [
+        ParsedItem[],
+        ParsedItem[],
+        Record<string, SteamRgEntry>,
+        Record<string, SteamRgEntry>,
+      ]
     > {
       const win = window as any;
 
@@ -444,7 +446,9 @@ export default defineContentScript({
       const UserThem = await waitForGlobal<any>(() => win.UserThem);
       const partnerSteamId: string =
         win.g_ulTradePartnerSteamID?.toString() ??
-        (await waitForGlobal<string>(() => win.g_ulTradePartnerSteamID?.toString()));
+        (await waitForGlobal<string>(() =>
+          win.g_ulTradePartnerSteamID?.toString(),
+        ));
 
       const mySteamId: string = UserYou?.strSteamId;
       if (!mySteamId) throwError("Could not determine your Steam ID");
@@ -550,9 +554,14 @@ export default defineContentScript({
       await waitFor(500);
 
       console.log("[tf2-trader] Loading inventories...");
-      const [myInventory, theirInventory, myRgMap, theirRgMap] = await loadBothInventories();
+      const [myInventory, theirInventory, myRgMap, theirRgMap] =
+        await loadBothInventories();
       console.log("[tf2-trader] My inventory:", myInventory.length, "items");
-      console.log("[tf2-trader] Their inventory:", theirInventory.length, "items");
+      console.log(
+        "[tf2-trader] Their inventory:",
+        theirInventory.length,
+        "items",
+      );
 
       const itemsToGive: ReturnType<typeof toTradeItem>[] = [];
       const itemsToReceive: ReturnType<typeof toTradeItem>[] = [];
@@ -565,32 +574,55 @@ export default defineContentScript({
           // URL already has for_item=440_2_assetid (rare but handle it)
           assetId = forItem.split("_")[2];
           if (!assetId) throwError("Could not parse asset ID from for_item");
-          console.log("[tf2-trader] Sell listing — receiving assetId from for_item:", assetId);
+          console.log(
+            "[tf2-trader] Sell listing — receiving assetId from for_item:",
+            assetId,
+          );
         } else if (itemName) {
           // No for_item — find the item by name in the partner's inventory
           const decodedName = decodeURIComponent(itemName);
-          console.log("[tf2-trader] Sell listing — looking for item in partner inventory:", decodedName);
+          console.log(
+            "[tf2-trader] Sell listing — looking for item in partner inventory:",
+            decodedName,
+          );
           const theirItem = theirInventory.find((i) => i.name === decodedName);
           if (!theirItem)
-            throwError(`Could not find "${decodedName}" in partner's inventory`);
+            throwError(
+              `Could not find "${decodedName}" in partner's inventory`,
+            );
           assetId = theirItem.id;
-          console.log("[tf2-trader] Sell listing — receiving assetId from name lookup:", assetId);
+          console.log(
+            "[tf2-trader] Sell listing — receiving assetId from name lookup:",
+            assetId,
+          );
         } else {
-          throwError("Missing for_item and listing_item_name — cannot identify item to receive");
+          throwError(
+            "Missing for_item and listing_item_name — cannot identify item to receive",
+          );
         }
 
         itemsToReceive.push(toTradeItem(assetId!));
 
         // Add our currency
-        const currencyItems = pickCurrencyItems(myInventory, keysNeeded, metalNeeded);
-        console.log("[tf2-trader] Currency items to give:", currencyItems.map((i) => i.name));
+        const currencyItems = pickCurrencyItems(
+          myInventory,
+          keysNeeded,
+          metalNeeded,
+        );
+        console.log(
+          "[tf2-trader] Currency items to give:",
+          currencyItems.map((i) => i.name),
+        );
         currencyItems.forEach((i) => itemsToGive.push(toTradeItem(i.id)));
       } else if (intent === "0") {
         // Buy listing — they are buying, we are selling our item + receiving currency
         if (!itemName) throwError("Missing listing_item_name parameter");
 
         const decodedName = decodeURIComponent(itemName);
-        console.log("[tf2-trader] Buy listing — looking for item:", decodedName);
+        console.log(
+          "[tf2-trader] Buy listing — looking for item:",
+          decodedName,
+        );
         const ourItem = myInventory.find((i) => i.name === decodedName);
         if (!ourItem)
           throwError(`Could not find "${decodedName}" in your inventory`);
@@ -599,8 +631,15 @@ export default defineContentScript({
         itemsToGive.push(toTradeItem(ourItem.id));
 
         // Add their currency
-        const currencyItems = pickCurrencyItems(theirInventory, keysNeeded, metalNeeded);
-        console.log("[tf2-trader] Currency items to receive:", currencyItems.map((i) => i.name));
+        const currencyItems = pickCurrencyItems(
+          theirInventory,
+          keysNeeded,
+          metalNeeded,
+        );
+        console.log(
+          "[tf2-trader] Currency items to receive:",
+          currencyItems.map((i) => i.name),
+        );
         currencyItems.forEach((i) => itemsToReceive.push(toTradeItem(i.id)));
       } else {
         throwError("Unknown listing_intent value");
@@ -629,30 +668,35 @@ export default defineContentScript({
       const partnerSteamId = win2.g_ulTradePartnerSteamID?.toString();
       const mySteamId: string = UserYou.strSteamId;
 
-      await waitForGlobal<any>(() => UserYou.rgContexts?.["440"] ? true : undefined);
+      await waitForGlobal<any>(() =>
+        UserYou.rgContexts?.["440"] ? true : undefined,
+      );
       if (!UserYou.rgContexts?.["440"]?.["2"]?.inventory?.rgInventory) {
         UserYou.getInventory(440, 2);
       }
 
       UserThem.LoadForeignAppContextData(partnerSteamId, 440, 2);
-      await waitForGlobal<any>(() => UserThem.rgContexts?.["440"]?.["2"] ? true : undefined);
+      await waitForGlobal<any>(() =>
+        UserThem.rgContexts?.["440"]?.["2"] ? true : undefined,
+      );
       if (UserThem.cLoadsInFlight === 0) {
         UserThem.loadInventory(440, 2);
       }
 
       console.log("[tf2-trader] Waiting for Steam inventory caches...");
-      await waitForGlobal<any>(
-        () => {
-          const youInv = UserYou.rgContexts?.["440"]?.["2"]?.inventory?.rgInventory;
-          const themInv = UserThem.rgContexts?.["440"]?.["2"]?.inventory?.rgInventory;
-          return youInv && themInv ? true : undefined;
-        },
-        30000,
-      );
+      await waitForGlobal<any>(() => {
+        const youInv =
+          UserYou.rgContexts?.["440"]?.["2"]?.inventory?.rgInventory;
+        const themInv =
+          UserThem.rgContexts?.["440"]?.["2"]?.inventory?.rgInventory;
+        return youInv && themInv ? true : undefined;
+      }, 30000);
       const youCache = UserYou.rgContexts["440"]["2"].inventory.rgInventory;
       const themCache = UserThem.rgContexts["440"]["2"].inventory.rgInventory;
-      console.log("[tf2-trader] Inventory caches ready:",
-        Object.keys(youCache).length, "vs",
+      console.log(
+        "[tf2-trader] Inventory caches ready:",
+        Object.keys(youCache).length,
+        "vs",
         Object.keys(themCache).length,
       );
 
@@ -676,7 +720,9 @@ export default defineContentScript({
       // We must NOT use display:none on the elements themselves — Steam's
       // PutItemInSlot moves them into the trade slot without changing display,
       // so a hidden element stays invisible in the slot (blank box).
-      let offscreenContainer = document.getElementById("tf2trader-items") as HTMLElement | null;
+      let offscreenContainer = document.getElementById(
+        "tf2trader-items",
+      ) as HTMLElement | null;
       if (!offscreenContainer) {
         offscreenContainer = document.createElement("div");
         offscreenContainer.id = "tf2trader-items";
@@ -734,7 +780,10 @@ export default defineContentScript({
             }
           }
         } catch (e) {
-          console.warn(`[tf2-trader] BuildItemElement failed for ${assetid}:`, e);
+          console.warn(
+            `[tf2-trader] BuildItemElement failed for ${assetid}:`,
+            e,
+          );
         }
 
         // Manual fallback — bare div, still in off-screen container not hidden
@@ -750,7 +799,13 @@ export default defineContentScript({
         ensureItemElement(UserYou, mySteamId, youCache, myRgMap, a.assetid);
       }
       for (const a of itemsToReceive) {
-        ensureItemElement(UserThem, partnerSteamId, themCache, theirRgMap, a.assetid);
+        ensureItemElement(
+          UserThem,
+          partnerSteamId,
+          themCache,
+          theirRgMap,
+          a.assetid,
+        );
       }
 
       // Populate the trade via g_rgCurrentTradeStatus + RefreshTradeStatus.

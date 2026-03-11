@@ -125,8 +125,14 @@ export const processListings = () => {
 
         // Debug: log first listing's item dataset so we can see what's available
         if (!document.querySelector("[data-bp-processed]")) {
-          console.log("[tf2-trader] First listing item dataset:", JSON.stringify(itemEl.dataset));
-          console.log("[tf2-trader] First listing item outerHTML (truncated):", itemEl.outerHTML.substring(0, 500));
+          console.log(
+            "[tf2-trader] First listing item dataset:",
+            JSON.stringify(itemEl.dataset),
+          );
+          console.log(
+            "[tf2-trader] First listing item outerHTML (truncated):",
+            itemEl.outerHTML.substring(0, 500),
+          );
         }
 
         // Capture item name for both buy and sell — tradeoffer-new uses it
@@ -136,7 +142,9 @@ export const processListings = () => {
           itemEl.dataset.item_name ||
           itemEl.title ||
           listingEl
-            .querySelector(".item-name, [data-item_name], .listing-item-name, span.name")
+            .querySelector(
+              ".item-name, [data-item_name], .listing-item-name, span.name",
+            )
             ?.textContent?.trim() ||
           "";
         if (rawName) {
@@ -171,7 +179,9 @@ export const processListings = () => {
       // can locate the item in the correct inventory.
       // Note: searchParams.set() handles encoding automatically — no manual
       // encodeURIComponent needed (that would cause double-encoding).
-      const itemNameToEmbed = (listingEl as any)._bp_item_name as string | undefined;
+      const itemNameToEmbed = (listingEl as any)._bp_item_name as
+        | string
+        | undefined;
       if (itemNameToEmbed) {
         url.searchParams.set("listing_item_name", itemNameToEmbed);
       }
