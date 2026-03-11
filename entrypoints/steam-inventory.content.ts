@@ -1,13 +1,5 @@
 import "@/styles/steam-inventory.css";
-import { addAttributesToElement, getItemAttributes } from "@/utils/inventory";
-
-const buildSku = (defindex: string, item: any): string => {
-  const parts: (string | number)[] = [defindex, item.quality ?? 6];
-  if (item.uncraft) parts.push("uncraftable");
-  if (item.killstreak) parts.push(`kt-${item.killstreak}`);
-  if (item.effect) parts.push(`u${item.effect}`);
-  return parts.join(";");
-};
+import { addAttributesToElement, getItemAttributes, buildSku } from "@/utils/inventory";
 
 const injectPricedbButton = (assetId: string) => {
   const wikiLink = document.querySelector<HTMLAnchorElement>(
