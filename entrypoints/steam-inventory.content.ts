@@ -1,5 +1,4 @@
 import "@/styles/steam-inventory.css";
-import { addAttributesToElement, getItemAttributes, buildSku } from "@/utils/inventory";
 
 const injectPricedbButton = (assetId: string) => {
   const wikiLink = document.querySelector<HTMLAnchorElement>(

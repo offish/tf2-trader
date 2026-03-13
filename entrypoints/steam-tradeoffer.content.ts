@@ -1,11 +1,6 @@
-// NOTE: This script runs in world: 'MAIN' so it can access Steam's page-level
-// globals (UserYou, UserThem, g_rgCurrentTradeStatus, etc.).
-// CSS is injected by the companion tradeoffer-css.content script (ISOLATED world).
-
 import "@/styles/steam-tradeoffer.css";
 import {
   addAttributes,
-  SteamItem,
   getURLParams,
   flatten,
   getIDsFromString,
@@ -14,17 +9,9 @@ import {
   partition,
 } from "@/utils/tradeoffer";
 import { getEffectURL } from "@/utils";
+import { SteamItem } from "@/types";
 
 const W = window as any;
-const STORAGE_KEY_PREFIX = "tf2_trader";
-
-function getStored(name: string): string | null {
-  return localStorage.getItem(STORAGE_KEY_PREFIX + name);
-}
-
-function setStored(name: string, value: string | number): void {
-  localStorage.setItem(STORAGE_KEY_PREFIX + name, String(value));
-}
 
 export default defineContentScript({
   matches: ["*://steamcommunity.com/tradeoffer/*"],

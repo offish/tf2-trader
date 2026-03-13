@@ -56,9 +56,7 @@ export const getKeysListedValue = (items: HTMLElement[], keyValue: number) => {
   return refinedToKeys(totalRef, keyValue);
 };
 
-export const stringToCurrencies = (
-  str: string | undefined,
-): Currencies | null => {
+const stringToCurrencies = (str: string | undefined): Currencies | null => {
   if (!str) return null;
 
   const cleaned = str.trim().replace(/\s+/g, " ");

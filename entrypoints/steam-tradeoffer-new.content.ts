@@ -1,4 +1,4 @@
-import { getItemAttributes, buildSku, getDefindexFromDesc } from "@/utils/inventory";
+import { ParsedItem, SteamRgEntry } from "@/types";
 
 export default defineContentScript({
   matches: ["https://steamcommunity.com/tradeoffer/new*"],
@@ -27,7 +27,10 @@ export default defineContentScript({
 
     // Cache SKU prices for the lifetime of the page so repeated panel
     // refreshes don't re-request the same items.
-    const priceCache = new Map<string, { keys: number; metal: number } | null>();
+    const priceCache = new Map<
+      string,
+      { keys: number; metal: number } | null
+    >();
 
     // The content script runs in world:MAIN (Steam's page), which is bound by
     // Steam's CSP — direct fetch() to pricedb.io is blocked.  Instead we post
@@ -56,7 +59,10 @@ export default defineContentScript({
             }
           };
           window.addEventListener("message", handler);
-          window.postMessage({ type: "tf2trader_pricedb_request", sku, id }, "*");
+          window.postMessage(
+            { type: "tf2trader_pricedb_request", sku, id },
+            "*",
+          );
         },
       );
 
@@ -105,7 +111,10 @@ export default defineContentScript({
 
       for (const asset of assets) {
         const desc = rgMap[asset.assetid];
-        if (!desc) { missing++; continue; }
+        if (!desc) {
+          missing++;
+          continue;
+        }
 
         const defindex = getDefindexFromDesc(desc);
 
@@ -133,8 +142,10 @@ export default defineContentScript({
 
         // Strip "Series #" → "#" so "Mann Co. Supply Crate Series #75"
         // matches pricedb's canonical name "Mann Co. Supply Crate #75".
-        const itemName = (desc.market_hash_name ?? desc.name ?? "")
-          .replace(/\bSeries\s+(?=#\d)/i, "");
+        const itemName = (desc.market_hash_name ?? desc.name ?? "").replace(
+          /\bSeries\s+(?=#\d)/i,
+          "",
+        );
 
         fetches.push(
           fetchPricedbPrice(sku).then(async (price) => {
@@ -144,17 +155,22 @@ export default defineContentScript({
               const found = await fetchPricedbSearch(itemName);
               if (found) {
                 const resolved = { keys: found.keys, metal: found.metal };
-                priceCache.set(sku, resolved);        // cache under original SKU
-                priceCache.set(found.sku, resolved);  // and resolved SKU
-                console.log(`[tf2-trader] Search resolved ${sku} → ${found.sku}`);
-                totalKeys += resolved.keys + (keyPriceRef > 0 ? resolved.metal / keyPriceRef : 0);
+                priceCache.set(sku, resolved); // cache under original SKU
+                priceCache.set(found.sku, resolved); // and resolved SKU
+                console.log(
+                  `[tf2-trader] Search resolved ${sku} → ${found.sku}`,
+                );
+                totalKeys +=
+                  resolved.keys +
+                  (keyPriceRef > 0 ? resolved.metal / keyPriceRef : 0);
               } else {
                 unpricedNames.push(itemName);
                 missing++;
               }
               return;
             }
-            totalKeys += price.keys + (keyPriceRef > 0 ? price.metal / keyPriceRef : 0);
+            totalKeys +=
+              price.keys + (keyPriceRef > 0 ? price.metal / keyPriceRef : 0);
           }),
         );
       }
@@ -187,7 +203,9 @@ export default defineContentScript({
 
       const mkUnpricedSection = (names: string[], side: string) => {
         if (names.length === 0) return "";
-        const items = names.map(n => `<li style="margin:0;padding:1px 0;">${n}</li>`).join("");
+        const items = names
+          .map((n) => `<li style="margin:0;padding:1px 0;">${n}</li>`)
+          .join("");
         return `
           <details style="margin-bottom:6px;">
             <summary style="cursor:pointer;color:#8f98a0;font-size:11px;user-select:none;list-style:none;outline:none;">
@@ -220,7 +238,8 @@ export default defineContentScript({
         "line-height:1.5",
       ].join(";");
 
-      const hasUnpriced = giveVal.unpricedNames.length > 0 || recvVal.unpricedNames.length > 0;
+      const hasUnpriced =
+        giveVal.unpricedNames.length > 0 || recvVal.unpricedNames.length > 0;
 
       panel.innerHTML = `
         <div style="display:flex;align-items:center;gap:6px;font-weight:bold;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #3d3d3e;color:#67D35E;font-size:13px;">
@@ -254,8 +273,12 @@ export default defineContentScript({
         const status = win.g_rgCurrentTradeStatus;
         if (!status) return;
 
-        const myAssets = (status.me?.assets ?? []) as Array<{ assetid: string }>;
-        const theirAssets = (status.them?.assets ?? []) as Array<{ assetid: string }>;
+        const myAssets = (status.me?.assets ?? []) as Array<{
+          assetid: string;
+        }>;
+        const theirAssets = (status.them?.assets ?? []) as Array<{
+          assetid: string;
+        }>;
 
         if (myAssets.length === 0 && theirAssets.length === 0) {
           document.getElementById("tf2trader-value-panel")?.remove();
@@ -265,7 +288,8 @@ export default defineContentScript({
         const myInv: Record<string, any> =
           win.UserYou?.rgContexts?.["440"]?.["2"]?.inventory?.rgInventory ?? {};
         const theirInv: Record<string, any> =
-          win.UserThem?.rgContexts?.["440"]?.["2"]?.inventory?.rgInventory ?? {};
+          win.UserThem?.rgContexts?.["440"]?.["2"]?.inventory?.rgInventory ??
+          {};
 
         try {
           await renderValuePanel(myAssets, theirAssets, myInv, theirInv);
@@ -339,24 +363,6 @@ export default defineContentScript({
     // -------------------------------------------------------------------------
     // Inventory loading
     // -------------------------------------------------------------------------
-
-    interface ParsedItem {
-      id: string;
-      name: string;
-    }
-
-    // Steam rgInventory entry — merged asset + description, same shape Steam's
-    // loadInventory produces so it can be injected when an item is missing.
-    interface SteamRgEntry {
-      id: string;
-      assetid: string;
-      classid: string;
-      instanceid: string;
-      amount: string;
-      appid: number;
-      contextid: string;
-      [key: string]: any;
-    }
 
     function nameFromDescription(desc: any): string {
       let name: string = desc.market_hash_name || desc.name || "";
@@ -834,7 +840,9 @@ export default defineContentScript({
 
       console.log("[tf2-trader] Calling RefreshTradeStatus...");
       win2.RefreshTradeStatus(win2.g_rgCurrentTradeStatus, true);
-      console.log("[tf2-trader] Done — review trade and click Send Trade Offer.");
+      console.log(
+        "[tf2-trader] Done — review trade and click Send Trade Offer.",
+      );
       // The live panel observer (startLiveValuePanel) will pick up the new
       // trade items automatically now that RefreshTradeStatus has run.
     } catch (err) {
