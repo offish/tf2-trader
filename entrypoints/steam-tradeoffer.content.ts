@@ -1057,7 +1057,7 @@ function initEnhancer(): void {
 
     for (let slot = 0; slot < slotContainerEl.children.length; slot++) {
       const elSlot = slotContainerEl.children[slot] as HTMLElement;
-      const elCurItem = elSlot.querySelector<HTMLElement>(".item");
+      const elCurItem = elSlot.querySelector<HTMLElement>(".item") as any;
       let elNewItem: HTMLElement | null = null;
       let bRemoveCurItem = elCurItem != null;
       let bItemIsNewToTrade = false,
@@ -1077,7 +1077,7 @@ function initEnhancer(): void {
           if (!nNumBadItems) firstBadItem = rgSlotItems[slot];
           nNumBadItems++;
         }
-        const elItem = user.findAssetElement(appid, contextid, assetid);
+        const elItem = user.findAssetElement(appid, contextid, assetid) as any;
         const escrowEnd = W.g_dateEscrowEnd;
         if (
           escrowEnd != null &&
@@ -1106,7 +1106,7 @@ function initEnhancer(): void {
           }
         } else {
           elNewItem = elItem;
-          const item = elNewItem.rgItem;
+          const item = (elNewItem as any).rgItem;
           if (!item.unknown) bItemIsNewToTrade = true;
           if (item.is_stackable) {
             const stack = W.GetTradeItemStack(user, item);
