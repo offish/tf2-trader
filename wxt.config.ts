@@ -8,5 +8,6 @@ export default defineConfig({
     description: "Enhance Your Team Fortress 2 Trading Experience.",
     version: version,
     permissions: ["storage"],
+    host_permissions: ["https://pricedb.io/*"],
   },
 });
