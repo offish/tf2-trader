@@ -1,3 +1,5 @@
+import { ParsedItem, SteamRgEntry } from "@/types";
+
 export default defineContentScript({
   matches: ["https://steamcommunity.com/tradeoffer/new*"],
   world: "MAIN",
@@ -5,7 +7,316 @@ export default defineContentScript({
   async main() {
     const params = new URLSearchParams(location.search);
 
-    // Only activate when this page was opened from our extension
+    // -------------------------------------------------------------------------
+    // PriceDB helpers — defined here so they run on ALL tradeoffer/new pages,
+    // not just listing auto-builds.
+    // -------------------------------------------------------------------------
+
+    function toTradeItem(assetId: string) {
+      return { appid: 440, contextid: "2", amount: 1, assetid: assetId };
+    }
+
+    /** Metal (ref) value of each currency item. */
+    const CURRENCY_DEFINDEXES: Record<string, { keys: number; metal: number }> =
+      {
+        "5021": { keys: 1, metal: 0 }, // Mann Co. Supply Crate Key
+        "5000": { keys: 0, metal: 1 }, // Refined Metal
+        "5001": { keys: 0, metal: 1 / 3 }, // Reclaimed Metal
+        "5002": { keys: 0, metal: 1 / 9 }, // Scrap Metal
+      };
+
+    // Cache SKU prices for the lifetime of the page so repeated panel
+    // refreshes don't re-request the same items.
+    const priceCache = new Map<
+      string,
+      { keys: number; metal: number } | null
+    >();
+
+    // The content script runs in world:MAIN (Steam's page), which is bound by
+    // Steam's CSP — direct fetch() to pricedb.io is blocked.  Instead we post
+    // a message to the ISOLATED bridge script (tradeoffer-pricedb-bridge), which
+    // forwards the request through the background service worker.
+    async function fetchPricedbPrice(
+      sku: string,
+    ): Promise<{ keys: number; metal: number } | null> {
+      if (priceCache.has(sku)) return priceCache.get(sku)!;
+
+      const result = await new Promise<{ keys: number; metal: number } | null>(
+        (resolve) => {
+          const id = Math.random().toString(36).slice(2);
+          const timer = setTimeout(() => {
+            window.removeEventListener("message", handler);
+            resolve(null);
+          }, 5000);
+          const handler = (e: MessageEvent) => {
+            if (
+              e.data?.type === "tf2trader_pricedb_response" &&
+              e.data?.id === id
+            ) {
+              clearTimeout(timer);
+              window.removeEventListener("message", handler);
+              resolve(e.data.result ?? null);
+            }
+          };
+          window.addEventListener("message", handler);
+          window.postMessage(
+            { type: "tf2trader_pricedb_request", sku, id },
+            "*",
+          );
+        },
+      );
+
+      priceCache.set(sku, result);
+      return result;
+    }
+
+    /** Search pricedb by name — only used as a fallback when the SKU is incomplete.
+     *  Returns price + resolved SKU when there is exactly one matching result. */
+    async function fetchPricedbSearch(
+      query: string,
+    ): Promise<{ keys: number; metal: number; sku: string } | null> {
+      return new Promise((resolve) => {
+        const id = Math.random().toString(36).slice(2);
+        const timer = setTimeout(() => {
+          window.removeEventListener("message", handler);
+          resolve(null);
+        }, 5000);
+        const handler = (e: MessageEvent) => {
+          if (
+            e.data?.type === "tf2trader_pricedb_search_response" &&
+            e.data?.id === id
+          ) {
+            clearTimeout(timer);
+            window.removeEventListener("message", handler);
+            resolve(e.data.result ?? null);
+          }
+        };
+        window.addEventListener("message", handler);
+        window.postMessage(
+          { type: "tf2trader_pricedb_search_request", query, id },
+          "*",
+        );
+      });
+    }
+
+    async function sideValueInKeys(
+      assets: Array<{ assetid: string }>,
+      rgMap: Record<string, any>,
+      keyPriceRef: number,
+    ): Promise<{ total: number; missing: number; unpricedNames: string[] }> {
+      let totalKeys = 0;
+      let missing = 0;
+      const unpricedNames: string[] = [];
+      const fetches: Promise<void>[] = [];
+
+      for (const asset of assets) {
+        const desc = rgMap[asset.assetid];
+        if (!desc) {
+          missing++;
+          continue;
+        }
+
+        const defindex = getDefindexFromDesc(desc);
+
+        if (defindex && CURRENCY_DEFINDEXES[defindex]) {
+          const c = CURRENCY_DEFINDEXES[defindex];
+          totalKeys += c.keys + (keyPriceRef > 0 ? c.metal / keyPriceRef : 0);
+          continue;
+        }
+
+        if (!defindex) {
+          const name = desc.market_hash_name ?? desc.name ?? "Unknown";
+          unpricedNames.push(name);
+          missing++;
+          continue;
+        }
+
+        const attrs = getItemAttributes(desc);
+        const sku = buildSku(defindex, attrs);
+        console.log("[tf2-trader] SKU debug:", {
+          name: desc.market_hash_name ?? desc.name,
+          defindex,
+          attrs,
+          sku,
+        });
+
+        // Strip "Series #" → "#" so "Mann Co. Supply Crate Series #75"
+        // matches pricedb's canonical name "Mann Co. Supply Crate #75".
+        const itemName = (desc.market_hash_name ?? desc.name ?? "").replace(
+          /\bSeries\s+(?=#\d)/i,
+          "",
+        );
+
+        fetches.push(
+          fetchPricedbPrice(sku).then(async (price) => {
+            if (!price) {
+              // Fallback: search by name — handles crates where the series
+              // number was not available when building the SKU.
+              const found = await fetchPricedbSearch(itemName);
+              if (found) {
+                const resolved = { keys: found.keys, metal: found.metal };
+                priceCache.set(sku, resolved); // cache under original SKU
+                priceCache.set(found.sku, resolved); // and resolved SKU
+                console.log(
+                  `[tf2-trader] Search resolved ${sku} → ${found.sku}`,
+                );
+                totalKeys +=
+                  resolved.keys +
+                  (keyPriceRef > 0 ? resolved.metal / keyPriceRef : 0);
+              } else {
+                unpricedNames.push(itemName);
+                missing++;
+              }
+              return;
+            }
+            totalKeys +=
+              price.keys + (keyPriceRef > 0 ? price.metal / keyPriceRef : 0);
+          }),
+        );
+      }
+
+      await Promise.all(fetches);
+      return { total: totalKeys, missing, unpricedNames };
+    }
+
+    async function renderValuePanel(
+      giveAssets: Array<{ assetid: string }>,
+      recvAssets: Array<{ assetid: string }>,
+      giveRgMap: Record<string, any>,
+      recvRgMap: Record<string, any>,
+    ): Promise<void> {
+      const keyData = await fetchPricedbPrice("5021;6");
+      const keyPriceRef = keyData?.metal ?? 0;
+
+      const [giveVal, recvVal] = await Promise.all([
+        sideValueInKeys(giveAssets, giveRgMap, keyPriceRef),
+        sideValueInKeys(recvAssets, recvRgMap, keyPriceRef),
+      ]);
+
+      const fmtKeys = (v: { total: number }) => {
+        const rounded = Math.max(0, Math.round(v.total * 100) / 100) || 0;
+        return `${rounded} keys`;
+      };
+
+      const mkUnpricedSection = (names: string[], side: string) => {
+        if (names.length === 0) return "";
+        const items = names
+          .map((n) => `<li style="margin:0;padding:1px 0;">${n}</li>`)
+          .join("");
+        return `
+          <details style="margin-bottom:6px;">
+            <summary style="cursor:pointer;color:#8f98a0;font-size:11px;user-select:none;list-style:none;outline:none;">
+              ${side}: ${names.length} unpriced item${names.length > 1 ? "s" : ""} ▸
+            </summary>
+            <ul style="margin:4px 0 0 8px;padding:0;color:#8f98a0;font-size:11px;list-style:disc;">${items}</ul>
+          </details>
+        `;
+      };
+
+      const existing = document.getElementById("tf2trader-value-panel");
+      if (existing) existing.remove();
+
+      const panel = document.createElement("div");
+      panel.id = "tf2trader-value-panel";
+      panel.style.cssText = [
+        "position:fixed",
+        "bottom:20px",
+        "right:20px",
+        "background:#1d1d1d",
+        "border:1px solid #3d3d3e",
+        "border-radius:5px",
+        "color:#c6d4df",
+        "font-size:12px",
+        "font-family:'Motiva Sans',Arial,sans-serif",
+        "padding:12px 16px",
+        "z-index:99999",
+        "min-width:220px",
+        "box-shadow:0 4px 16px rgba(0,0,0,0.7)",
+        "line-height:1.5",
+      ].join(";");
+
+      const hasUnpriced =
+        giveVal.unpricedNames.length > 0 || recvVal.unpricedNames.length > 0;
+
+      panel.innerHTML = `
+        <div style="display:flex;align-items:center;gap:6px;font-weight:bold;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #3d3d3e;color:#67D35E;font-size:13px;">
+          Value Estimate
+        </div>
+        <div style="display:flex;justify-content:space-between;gap:16px;margin-bottom:4px;">
+          <span style="color:#8f98a0;">You give</span>
+          <strong style="color:#fff;">${fmtKeys(giveVal)}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;gap:16px;margin-bottom:${hasUnpriced ? "10" : "8"}px;">
+          <span style="color:#8f98a0;">You receive</span>
+          <strong style="color:#fff;">${fmtKeys(recvVal)}</strong>
+        </div>
+        ${hasUnpriced ? `<div style="border-top:1px solid #3d3d3e;padding-top:8px;margin-bottom:6px;">${mkUnpricedSection(giveVal.unpricedNames, "Giving")}${mkUnpricedSection(recvVal.unpricedNames, "Receiving")}</div>` : ""}
+        <div style="font-size:11px;color:#8f98a0;padding-top:6px;border-top:1px solid #3d3d3e;">
+          via <a href="https://pricedb.io" target="_blank" rel="noopener" style="color:#67C1F5;text-decoration:none;">PriceDB.io</a>
+        </div>
+      `;
+
+      document.body.appendChild(panel);
+    }
+
+    // Watches both trade-slot containers and refreshes the panel whenever items
+    // are added or removed — works on any tradeoffer/new page.
+    function startLiveValuePanel(): void {
+      const win = window as any;
+      let debounce: ReturnType<typeof setTimeout> | null = null;
+
+      const refresh = async () => {
+        const status = win.g_rgCurrentTradeStatus;
+        if (!status) return;
+
+        const myAssets = (status.me?.assets ?? []) as Array<{
+          assetid: string;
+        }>;
+        const theirAssets = (status.them?.assets ?? []) as Array<{
+          assetid: string;
+        }>;
+
+        if (myAssets.length === 0 && theirAssets.length === 0) {
+          document.getElementById("tf2trader-value-panel")?.remove();
+          return;
+        }
+
+        const myInv: Record<string, any> =
+          win.UserYou?.rgContexts?.["440"]?.["2"]?.inventory?.rgInventory ?? {};
+        const theirInv: Record<string, any> =
+          win.UserThem?.rgContexts?.["440"]?.["2"]?.inventory?.rgInventory ??
+          {};
+
+        try {
+          await renderValuePanel(myAssets, theirAssets, myInv, theirInv);
+        } catch (e) {
+          console.warn("[tf2-trader] Live value panel error:", e);
+        }
+      };
+
+      const schedule = () => {
+        if (debounce) clearTimeout(debounce);
+        debounce = setTimeout(refresh, 600);
+      };
+
+      const observe = () => {
+        const yours = document.getElementById("your_slots");
+        const theirs = document.getElementById("their_slots");
+        if (!yours || !theirs) {
+          setTimeout(observe, 500);
+          return;
+        }
+        const obs = new MutationObserver(schedule);
+        obs.observe(yours, { childList: true, subtree: true });
+        obs.observe(theirs, { childList: true, subtree: true });
+      };
+      observe();
+    }
+
+    // Start on every tradeoffer/new page — no listing params required.
+    startLiveValuePanel();
+
+    // Only run the auto-build flow when opened from a backpack.tf listing link.
     if (
       !params.has("listing_currencies_metal") &&
       !params.has("listing_currencies_keys")
@@ -24,8 +335,7 @@ export default defineContentScript({
     // Helpers
     // -------------------------------------------------------------------------
 
-    const waitFor = (ms: number) =>
-      new Promise((res) => setTimeout(res, ms));
+    const waitFor = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
     async function waitForGlobal<T>(
       getter: () => T | undefined,
@@ -50,24 +360,6 @@ export default defineContentScript({
     // Inventory loading
     // -------------------------------------------------------------------------
 
-    interface ParsedItem {
-      id: string;
-      name: string;
-    }
-
-    // Steam rgInventory entry — merged asset + description, same shape Steam's
-    // loadInventory produces so it can be injected when an item is missing.
-    interface SteamRgEntry {
-      id: string;
-      assetid: string;
-      classid: string;
-      instanceid: string;
-      amount: string;
-      appid: number;
-      contextid: string;
-      [key: string]: any;
-    }
-
     function nameFromDescription(desc: any): string {
       let name: string = desc.market_hash_name || desc.name || "";
 
@@ -77,9 +369,7 @@ export default defineContentScript({
           if (d.value === "( Not Usable in Crafting )") {
             name = "Non-Craftable " + name;
           } else if (d.value.startsWith("\u2605 Unusual Effect: ")) {
-            const effect = d.value.substring(
-              "\u2605 Unusual Effect: ".length,
-            );
+            const effect = d.value.substring("\u2605 Unusual Effect: ".length);
             name = name.replace("Unusual", effect);
           }
         }
@@ -144,7 +434,12 @@ export default defineContentScript({
     }
 
     async function loadBothInventories(): Promise<
-      [ParsedItem[], ParsedItem[], Record<string, SteamRgEntry>, Record<string, SteamRgEntry>]
+      [
+        ParsedItem[],
+        ParsedItem[],
+        Record<string, SteamRgEntry>,
+        Record<string, SteamRgEntry>,
+      ]
     > {
       const win = window as any;
 
@@ -153,7 +448,9 @@ export default defineContentScript({
       const UserThem = await waitForGlobal<any>(() => win.UserThem);
       const partnerSteamId: string =
         win.g_ulTradePartnerSteamID?.toString() ??
-        (await waitForGlobal<string>(() => win.g_ulTradePartnerSteamID?.toString()));
+        (await waitForGlobal<string>(() =>
+          win.g_ulTradePartnerSteamID?.toString(),
+        ));
 
       const mySteamId: string = UserYou?.strSteamId;
       if (!mySteamId) throwError("Could not determine your Steam ID");
@@ -242,10 +539,6 @@ export default defineContentScript({
       return picked;
     }
 
-    function toTradeItem(assetId: string) {
-      return { appid: 440, contextid: "2", amount: 1, assetid: assetId };
-    }
-
     // -------------------------------------------------------------------------
     // Main flow
     // -------------------------------------------------------------------------
@@ -263,9 +556,14 @@ export default defineContentScript({
       await waitFor(500);
 
       console.log("[tf2-trader] Loading inventories...");
-      const [myInventory, theirInventory, myRgMap, theirRgMap] = await loadBothInventories();
+      const [myInventory, theirInventory, myRgMap, theirRgMap] =
+        await loadBothInventories();
       console.log("[tf2-trader] My inventory:", myInventory.length, "items");
-      console.log("[tf2-trader] Their inventory:", theirInventory.length, "items");
+      console.log(
+        "[tf2-trader] Their inventory:",
+        theirInventory.length,
+        "items",
+      );
 
       const itemsToGive: ReturnType<typeof toTradeItem>[] = [];
       const itemsToReceive: ReturnType<typeof toTradeItem>[] = [];
@@ -278,32 +576,55 @@ export default defineContentScript({
           // URL already has for_item=440_2_assetid (rare but handle it)
           assetId = forItem.split("_")[2];
           if (!assetId) throwError("Could not parse asset ID from for_item");
-          console.log("[tf2-trader] Sell listing — receiving assetId from for_item:", assetId);
+          console.log(
+            "[tf2-trader] Sell listing — receiving assetId from for_item:",
+            assetId,
+          );
         } else if (itemName) {
           // No for_item — find the item by name in the partner's inventory
           const decodedName = decodeURIComponent(itemName);
-          console.log("[tf2-trader] Sell listing — looking for item in partner inventory:", decodedName);
+          console.log(
+            "[tf2-trader] Sell listing — looking for item in partner inventory:",
+            decodedName,
+          );
           const theirItem = theirInventory.find((i) => i.name === decodedName);
           if (!theirItem)
-            throwError(`Could not find "${decodedName}" in partner's inventory`);
+            throwError(
+              `Could not find "${decodedName}" in partner's inventory`,
+            );
           assetId = theirItem.id;
-          console.log("[tf2-trader] Sell listing — receiving assetId from name lookup:", assetId);
+          console.log(
+            "[tf2-trader] Sell listing — receiving assetId from name lookup:",
+            assetId,
+          );
         } else {
-          throwError("Missing for_item and listing_item_name — cannot identify item to receive");
+          throwError(
+            "Missing for_item and listing_item_name — cannot identify item to receive",
+          );
         }
 
         itemsToReceive.push(toTradeItem(assetId!));
 
         // Add our currency
-        const currencyItems = pickCurrencyItems(myInventory, keysNeeded, metalNeeded);
-        console.log("[tf2-trader] Currency items to give:", currencyItems.map((i) => i.name));
+        const currencyItems = pickCurrencyItems(
+          myInventory,
+          keysNeeded,
+          metalNeeded,
+        );
+        console.log(
+          "[tf2-trader] Currency items to give:",
+          currencyItems.map((i) => i.name),
+        );
         currencyItems.forEach((i) => itemsToGive.push(toTradeItem(i.id)));
       } else if (intent === "0") {
         // Buy listing — they are buying, we are selling our item + receiving currency
         if (!itemName) throwError("Missing listing_item_name parameter");
 
         const decodedName = decodeURIComponent(itemName);
-        console.log("[tf2-trader] Buy listing — looking for item:", decodedName);
+        console.log(
+          "[tf2-trader] Buy listing — looking for item:",
+          decodedName,
+        );
         const ourItem = myInventory.find((i) => i.name === decodedName);
         if (!ourItem)
           throwError(`Could not find "${decodedName}" in your inventory`);
@@ -312,8 +633,15 @@ export default defineContentScript({
         itemsToGive.push(toTradeItem(ourItem.id));
 
         // Add their currency
-        const currencyItems = pickCurrencyItems(theirInventory, keysNeeded, metalNeeded);
-        console.log("[tf2-trader] Currency items to receive:", currencyItems.map((i) => i.name));
+        const currencyItems = pickCurrencyItems(
+          theirInventory,
+          keysNeeded,
+          metalNeeded,
+        );
+        console.log(
+          "[tf2-trader] Currency items to receive:",
+          currencyItems.map((i) => i.name),
+        );
         currencyItems.forEach((i) => itemsToReceive.push(toTradeItem(i.id)));
       } else {
         throwError("Unknown listing_intent value");
@@ -342,30 +670,35 @@ export default defineContentScript({
       const partnerSteamId = win2.g_ulTradePartnerSteamID?.toString();
       const mySteamId: string = UserYou.strSteamId;
 
-      await waitForGlobal<any>(() => UserYou.rgContexts?.["440"] ? true : undefined);
+      await waitForGlobal<any>(() =>
+        UserYou.rgContexts?.["440"] ? true : undefined,
+      );
       if (!UserYou.rgContexts?.["440"]?.["2"]?.inventory?.rgInventory) {
         UserYou.getInventory(440, 2);
       }
 
       UserThem.LoadForeignAppContextData(partnerSteamId, 440, 2);
-      await waitForGlobal<any>(() => UserThem.rgContexts?.["440"]?.["2"] ? true : undefined);
+      await waitForGlobal<any>(() =>
+        UserThem.rgContexts?.["440"]?.["2"] ? true : undefined,
+      );
       if (UserThem.cLoadsInFlight === 0) {
         UserThem.loadInventory(440, 2);
       }
 
       console.log("[tf2-trader] Waiting for Steam inventory caches...");
-      await waitForGlobal<any>(
-        () => {
-          const youInv = UserYou.rgContexts?.["440"]?.["2"]?.inventory?.rgInventory;
-          const themInv = UserThem.rgContexts?.["440"]?.["2"]?.inventory?.rgInventory;
-          return youInv && themInv ? true : undefined;
-        },
-        30000,
-      );
+      await waitForGlobal<any>(() => {
+        const youInv =
+          UserYou.rgContexts?.["440"]?.["2"]?.inventory?.rgInventory;
+        const themInv =
+          UserThem.rgContexts?.["440"]?.["2"]?.inventory?.rgInventory;
+        return youInv && themInv ? true : undefined;
+      }, 30000);
       const youCache = UserYou.rgContexts["440"]["2"].inventory.rgInventory;
       const themCache = UserThem.rgContexts["440"]["2"].inventory.rgInventory;
-      console.log("[tf2-trader] Inventory caches ready:",
-        Object.keys(youCache).length, "vs",
+      console.log(
+        "[tf2-trader] Inventory caches ready:",
+        Object.keys(youCache).length,
+        "vs",
         Object.keys(themCache).length,
       );
 
@@ -389,7 +722,9 @@ export default defineContentScript({
       // We must NOT use display:none on the elements themselves — Steam's
       // PutItemInSlot moves them into the trade slot without changing display,
       // so a hidden element stays invisible in the slot (blank box).
-      let offscreenContainer = document.getElementById("tf2trader-items") as HTMLElement | null;
+      let offscreenContainer = document.getElementById(
+        "tf2trader-items",
+      ) as HTMLElement | null;
       if (!offscreenContainer) {
         offscreenContainer = document.createElement("div");
         offscreenContainer.id = "tf2trader-items";
@@ -447,7 +782,10 @@ export default defineContentScript({
             }
           }
         } catch (e) {
-          console.warn(`[tf2-trader] BuildItemElement failed for ${assetid}:`, e);
+          console.warn(
+            `[tf2-trader] BuildItemElement failed for ${assetid}:`,
+            e,
+          );
         }
 
         // Manual fallback — bare div, still in off-screen container not hidden
@@ -463,7 +801,13 @@ export default defineContentScript({
         ensureItemElement(UserYou, mySteamId, youCache, myRgMap, a.assetid);
       }
       for (const a of itemsToReceive) {
-        ensureItemElement(UserThem, partnerSteamId, themCache, theirRgMap, a.assetid);
+        ensureItemElement(
+          UserThem,
+          partnerSteamId,
+          themCache,
+          theirRgMap,
+          a.assetid,
+        );
       }
 
       // Populate the trade via g_rgCurrentTradeStatus + RefreshTradeStatus.
@@ -492,7 +836,11 @@ export default defineContentScript({
 
       console.log("[tf2-trader] Calling RefreshTradeStatus...");
       win2.RefreshTradeStatus(win2.g_rgCurrentTradeStatus, true);
-      console.log("[tf2-trader] Done — review trade and click Send Trade Offer.");
+      console.log(
+        "[tf2-trader] Done — review trade and click Send Trade Offer.",
+      );
+      // The live panel observer (startLiveValuePanel) will pick up the new
+      // trade items automatically now that RefreshTradeStatus has run.
     } catch (err) {
       // Errors are already alerted via throwError; just log non-thrown cases
       console.error("[tf2-trader] tradeoffer-new error:", err);

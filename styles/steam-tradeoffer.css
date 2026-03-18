@@ -1,0 +1,139 @@
+#tradeoffer_items_summary {
+  font-size: 12px;
+  color: #ffffff;
+}
+
+#add_btns .btn_small > span {
+  padding: 0 12px;
+}
+
+.btn_green {
+  background-color: #709d3c;
+}
+
+.btn_silver {
+  background-color: #676767;
+}
+
+.btn_blue {
+  background-color: #2e4766;
+}
+
+.btn_small {
+  user-select: none;
+}
+
+.summary_item {
+  display: inline-block;
+  position: relative;
+  width: 48px;
+  height: 48px;
+  padding: 3px;
+  margin: 0 2px 2px 0;
+  border: 1px solid;
+  background-color: #3c352e;
+  background-position: center;
+  background-size:
+    48px 48px,
+    100% 100%;
+  background-repeat: no-repeat;
+}
+
+.summary_badge {
+  padding: 1px 3px;
+  border-radius: 4px;
+  background-color: #209de6;
+  font-size: 12px;
+}
+
+.items_summary {
+  margin-top: 8px;
+}
+
+.summary_header {
+  margin-bottom: 4px;
+}
+
+.filter_full {
+  width: 200px;
+}
+
+.filter_number {
+  width: 110px;
+}
+
+.control_fields {
+  margin-top: 8px;
+}
+
+.warning {
+  color: #ff4422;
+}
+
+.trade_area .item.unusual.hover {
+  background-position: center;
+  background-color: #474747 !important;
+}
+
+.unusual {
+  background-position: center !important;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+.uncraft {
+  border-style: dashed !important;
+}
+
+.strange:before {
+  content: " ";
+  position: absolute;
+  z-index: 1;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  border: 2px solid rgba(207, 106, 50, 0.5);
+}
+
+.icons img.spell {
+  width: 14px;
+  height: 20px;
+}
+
+.icons img.parts {
+  width: 14px;
+  height: 20px;
+}
+
+.icons img.ks {
+  width: 14px;
+  height: 15px;
+  padding-top: 5px;
+}
+
+.lowcraft {
+  user-select: none;
+  right: 4%;
+  bottom: 4%;
+  text-align: end;
+  width: 50%;
+  font-size: 16px;
+  z-index: 1;
+  line-height: 1;
+  position: absolute;
+  pointer-events: none;
+}
+
+.icons > * {
+  margin-right: 4%;
+}
+
+.icons {
+  position: absolute;
+  pointer-events: none;
+  bottom: 4%;
+  left: 4%;
+  width: 92%;
+  height: 20px;
+}

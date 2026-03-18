@@ -20,12 +20,23 @@
 
 ## Features
 
-- Instant Accept/Decline buttons on Trade Offers
-- See Unusual Effects in inventory and on Steam Community Market
-- Item count summaries for Trade Offers
-- Item count summaries for Trade History
-- STN item range select (shift+click)
-- Old BackpackTF link on item pages
+- One-click trade offer creation with items and pure from Backpack.TF
+- Instant accept and decline buttons for incoming trade offers
+- Item summary counts on trade offers
+- Item summary counts on the trade offer history page
+- Shift-click item range selection on STNTrading.eu
+- Keyboard-based backpack sorting on Backpack.TF profile inventories
+- Unusual effect previews on Steam Community Market listings
+- Unusual effect previews on inventory items
+- Direct links to real-money marketplaces from Steam Community Market listings
+- One-click "Check price on PriceDB.io" button for inventory items
+- Link to PriceDB.io when right clicking items on Scrap.TF
+- Integrated PriceDB.io price graph on Backpack.TF stats pages (including next.backpack.tf)
+- Listing parameters included in Trade URLs on Backpack.TF and next.backpack.tf
+- Item name parameter support in Backpack.TF Trade URLs
+- Quick access buttons for rep.tf and Backpack.TF on trade offers
+- Additional item borders and icons in inventory views
+- Quick link to legacy Backpack.TF pages from Marketplace.TF item listings
 
 ## Development
 

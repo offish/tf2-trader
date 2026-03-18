@@ -1,13 +1,4 @@
 import "@/styles/steam-inventory.css";
-import { addAttributesToElement, getItemAttributes } from "@/utils/inventory";
-
-const buildSku = (defindex: string, item: any): string => {
-  const parts: (string | number)[] = [defindex, item.quality ?? 6];
-  if (item.uncraft) parts.push("uncraftable");
-  if (item.killstreak) parts.push(`kt-${item.killstreak}`);
-  if (item.effect) parts.push(`u${item.effect}`);
-  return parts.join(";");
-};
 
 const injectPricedbButton = (assetId: string) => {
   const wikiLink = document.querySelector<HTMLAnchorElement>(
@@ -40,36 +31,14 @@ const injectPricedbButton = (assetId: string) => {
   link.id = "pricedb-btn";
   link.href = `https://pricedb.io/item/${encodeURIComponent(sku)}`;
   link.target = "_blank";
-  link.textContent = "🔍 Check on PriceDB.IO";
+  link.textContent = "Check prices on PriceDB.io";
   link.setAttribute("data-asset", assetId);
   link.style.cssText = `
+    color: yellow;
     display: block;
     width: 100%;
-    padding: 8px 12px;
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-    border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 4px;
-    color: #ffffff !important;
-    font-size: 13px;
-    font-weight: 600;
-    text-decoration: none !important;
-    text-align: center;
-    cursor: pointer;
-    box-sizing: border-box;
-    transition: background 0.2s ease, border-color 0.2s ease;
-    pointer-events: all !important;
-    position: relative;
-    z-index: 999;
+    margin-bottom: 10px;
   `;
-
-  link.addEventListener("mouseenter", () => {
-    link.style.background = "linear-gradient(135deg, #0f3460 0%, #1a1a2e 100%)";
-    link.style.borderColor = "rgba(255,255,255,0.35)";
-  });
-  link.addEventListener("mouseleave", () => {
-    link.style.background = "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)";
-    link.style.borderColor = "rgba(255,255,255,0.15)";
-  });
 
   wikiLink.parentElement!.insertBefore(link, wikiLink);
 };

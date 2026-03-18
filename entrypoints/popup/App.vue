@@ -1,14 +1,15 @@
 <script lang="ts" setup>
 import Popup from "@/components/Popup.vue";
+import { version } from "@/version";
 </script>
 
 <template>
   <div>
-    <a href="https://steamcommunity.com/id/confern" target="_blank">
+    <a>
       <img src="/logo.svg" class="logo" alt="TF2 Trader Logo" />
     </a>
   </div>
-  <Popup msg="TF2 Trader" />
+  <Popup msg="TF2 Trader" :version="version" />
 </template>
 
 <style scoped>
