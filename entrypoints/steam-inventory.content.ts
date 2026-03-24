@@ -28,20 +28,35 @@ const injectPricedbButton = (assetId: string) => {
   const item = getItemAttributes(asset.description);
   const sku = buildSku(defindex, item);
 
-  const link = document.createElement("a");
-  link.id = "pricedb-btn";
-  link.href = `https://pricedb.io/item/${encodeURIComponent(sku)}`;
-  link.target = "_blank";
-  link.textContent = "Check prices on PriceDB.io";
-  link.setAttribute("data-asset", assetId);
-  link.style.cssText = `
-    color: yellow;
-    display: block;
-    width: 100%;
-    margin-bottom: 10px;
-  `;
+  const container = document.createElement("div");
+  container.id = "pricedb-btn";
+  container.setAttribute("data-asset", assetId);
+  container.style.cssText =
+    "display:flex;align-items:center;gap:8px;margin-bottom:10px;width:100%;";
 
-  wikiLink.parentElement!.insertBefore(link, wikiLink);
+  const pricedbLink = document.createElement("a");
+  pricedbLink.href = `https://pricedb.io/item/${encodeURIComponent(sku)}`;
+  pricedbLink.target = "_blank";
+  pricedbLink.textContent = "PriceDB.io";
+  pricedbLink.style.cssText = "color:yellow;flex:1;";
+  container.appendChild(pricedbLink);
+
+  if (item.series !== undefined) {
+    const sep = document.createElement("span");
+    sep.textContent = "|";
+    sep.style.cssText = "color:#8f98a0;padding:0 2px;";
+
+    const crateLink = document.createElement("a");
+    crateLink.href = `http://crate.tf/item/${encodeURIComponent(sku)}`;
+    crateLink.target = "_blank";
+    crateLink.textContent = "Crate.tf";
+    crateLink.style.cssText = "color:#67C1F5;";
+
+    container.appendChild(sep);
+    container.appendChild(crateLink);
+  }
+
+  wikiLink.parentElement!.insertBefore(container, wikiLink);
 };
 
 const observeItemSelection = () => {
