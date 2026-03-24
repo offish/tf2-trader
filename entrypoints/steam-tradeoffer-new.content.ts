@@ -200,17 +200,45 @@ export default defineContentScript({
       return { ref, rec, scrap };
     }
 
+    // Fetch asset IDs committed to pending outgoing trade offers so we can
+    // avoid re-selecting those same currency items.  Parses assetid patterns
+    // from Steam's embedded JavaScript on the sent-offers page.  Fails silently
+    // — if the page is unreachable or contains no parseable data the caller
+    // receives an empty set and falls through without disruption.
+    async function fetchSentOfferAssetIds(): Promise<Set<string>> {
+      try {
+        const res = await fetch(
+          "https://steamcommunity.com/tradeoffer/sentoffers/",
+          { credentials: "include" },
+        );
+        if (!res.ok) return new Set();
+        const html = await res.text();
+        const ids = new Set<string>();
+        for (const m of html.matchAll(/"assetid"\s*:\s*"(\d+)"/g)) {
+          ids.add(m[1]);
+        }
+        return ids;
+      } catch {
+        return new Set();
+      }
+    }
+
     function pickCurrencyItems(
       inventory: ParsedItem[],
       keys: number,
       metal: number,
+      lockedAssetIds: Set<string> = new Set(),
     ): ParsedItem[] {
-      const invKeys = inventory.filter(
-        (i) => i.name === "Mann Co. Supply Crate Key",
+      const avail = (items: ParsedItem[]) =>
+        items.filter((i) => !lockedAssetIds.has(i.id));
+      const invKeys = avail(
+        inventory.filter((i) => i.name === "Mann Co. Supply Crate Key"),
       );
-      const invRef = inventory.filter((i) => i.name === "Refined Metal");
-      const invRec = inventory.filter((i) => i.name === "Reclaimed Metal");
-      const invScrap = inventory.filter((i) => i.name === "Scrap Metal");
+      const invRef = avail(inventory.filter((i) => i.name === "Refined Metal"));
+      const invRec = avail(
+        inventory.filter((i) => i.name === "Reclaimed Metal"),
+      );
+      const invScrap = avail(inventory.filter((i) => i.name === "Scrap Metal"));
 
       if (invKeys.length < keys) throwError("Insufficient Keys in inventory");
 
@@ -281,6 +309,14 @@ export default defineContentScript({
         "items",
       );
 
+      console.log("[tf2-trader] Checking pending sent offers for locked items...");
+      const lockedAssetIds = await fetchSentOfferAssetIds();
+      if (lockedAssetIds.size > 0) {
+        console.log(
+          `[tf2-trader] ${lockedAssetIds.size} assetids locked in pending offers — will skip those.`,
+        );
+      }
+
       const itemsToGive: ReturnType<typeof toTradeItem>[] = [];
       const itemsToReceive: ReturnType<typeof toTradeItem>[] = [];
 
@@ -321,11 +357,12 @@ export default defineContentScript({
 
         itemsToReceive.push(toTradeItem(assetId!));
 
-        // Add our currency
+        // Add our currency — skip items already in pending sent offers
         const currencyItems = pickCurrencyItems(
           myInventory,
           keysNeeded,
           metalNeeded,
+          lockedAssetIds,
         );
         console.log(
           "[tf2-trader] Currency items to give:",
