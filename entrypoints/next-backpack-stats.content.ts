@@ -1,4 +1,5 @@
 import { processListings } from "@/utils/backpack";
+import { createPricedbGraphIframe } from "@/utils/graph";
 
 export default defineContentScript({
   matches: ["*://next.backpack.tf/stats*"],
@@ -46,14 +47,11 @@ export default defineContentScript({
           graph = document.createElement("div");
           graph.id = "pricedb-graph-wrapper";
           graph.className = "col-12 mb-3";
-          graph.innerHTML = `
-            <div class="card p-2" style="background: #273241; border: 1px solid #222;">
-                <iframe
-                    src="https://pricedb.io/api/graph/${sku}"
-                    style="width: 100%; height: 500px; border: none; border-radius: 4px;"
-                ></iframe>
-            </div>
-          `;
+          const card = document.createElement("div");
+          card.className = "card p-2";
+          card.style.cssText = "background:#273241;border:1px solid #222;";
+          card.appendChild(createPricedbGraphIframe(sku));
+          graph.appendChild(card);
           container.appendChild(graph);
         }
       }

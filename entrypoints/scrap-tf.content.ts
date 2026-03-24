@@ -1,3 +1,5 @@
+import { getEffectID } from "@/utils";
+
 const parseItemSku = (el: HTMLElement): string | null => {
   const defindex = el.dataset.defindex;
   if (!defindex) return null;

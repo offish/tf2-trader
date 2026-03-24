@@ -1,6 +1,8 @@
 import { TAG_TO_QUALITY } from "./data";
+import { getEffectID, getEffectURL } from "./index";
+import type { SteamItem, ResolvedItemAttributes } from "@/types";
 
-const getQualityFromTags = (item: any): number => {
+const getQualityFromTags = (item: SteamItem): number => {
   if (item.tags) {
     const qualityTag = item.tags.find((tag: any) => tag.category === "Quality");
     if (qualityTag) {
@@ -27,9 +29,9 @@ const getQualityFromTags = (item: any): number => {
   return COLOR_TO_QUALITY[color] ?? 6;
 };
 
-export const getItemAttributes = (item: any) => {
+export const getItemAttributes = (item: SteamItem): ResolvedItemAttributes => {
   const color = (item.name_color || "").toUpperCase();
-  const attributes: any = {
+  const attributes: ResolvedItemAttributes = {
     color,
     quality: getQualityFromTags(item),
   };
@@ -38,7 +40,7 @@ export const getItemAttributes = (item: any) => {
   const isStrangeQuality = attributes.quality === 11;
   const matchesLowcraft = item.name?.match(/.* #(\d+)$/);
   const hasStrangeItemType =
-    /^Strange /.test(item.market_hash_name) &&
+    /^Strange /.test(item.market_hash_name ?? "") &&
     item.type &&
     /^Strange ([0-9\w\s\\(\)'\-]+) \- ([0-9\w\s\(\)'-]+): (\d+)\n?$/.test(
       item.type,
@@ -101,7 +103,7 @@ export const getItemAttributes = (item: any) => {
   return attributes;
 };
 
-export const addAttributesToElement = (itemEl: HTMLElement, item: any) => {
+export const addAttributesToElement = (itemEl: HTMLElement, item: SteamItem) => {
   if (itemEl.hasAttribute("data-checked")) return;
 
   const attrs = getItemAttributes(item);
@@ -159,7 +161,7 @@ export const addAttributesToElement = (itemEl: HTMLElement, item: any) => {
  * Builds a PriceDB/tf2-schema SKU string from a defindex and parsed item attributes.
  * e.g. "5021;6", "725;5;u703", "5021;6;uncraftable"
  */
-export const buildSku = (defindex: string | number, item: any): string => {
+export const buildSku = (defindex: string | number, item: ResolvedItemAttributes): string => {
   const parts: (string | number)[] = [defindex, item.quality ?? 6];
   if (item.uncraft) parts.push("uncraftable");
   if (item.killstreak) parts.push(`kt-${item.killstreak}`);
@@ -173,7 +175,7 @@ export const buildSku = (defindex: string | number, item: any): string => {
  * itemredirect URL embedded in the item's actions array.
  * Returns null if no wiki link is found.
  */
-export const getDefindexFromDesc = (desc: any): string | null => {
+export const getDefindexFromDesc = (desc: SteamItem): string | null => {
   if (!desc?.actions) return null;
   for (const action of desc.actions) {
     const match = (action.link as string | undefined)?.match(

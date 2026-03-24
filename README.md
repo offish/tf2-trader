@@ -94,6 +94,15 @@ This will also have hot reloads. To select the extension navigate to the folder 
 
 ![Trade History](/.github/images/backpack-stats.png)
 
+## Affiliate Disclosure
+
+Some links injected by this extension on Steam Community Market listing pages
+(Skinport, Tradeit.gg, ManncoStore, Merchant.TF, CS.TRADE, SkinsCash) include
+referral or affiliate codes. Clicking these links may result in a commission
+being earned by contributors to this project. The links are clearly presented
+as alternative marketplace options and do not affect any prices shown to the
+user.
+
 ## Acknowledgements
 
 This repository builds upon a list of other extensions/scripts

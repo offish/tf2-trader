@@ -18,6 +18,7 @@ export interface SteamItem {
   icon_url?: string;
   icon_url_large?: string;
   fraudwarnings?: string[];
+  actions?: Array<{ link: string; name: string }>;
 }
 
 export interface ItemDescription {
@@ -72,8 +73,21 @@ export interface ItemAttributes {
   effect?: number;
   spelled?: boolean;
   parts?: boolean;
-  killstreak?: boolean;
+  killstreak?: number;
   uncraft?: boolean;
+}
+
+export interface ResolvedItemAttributes {
+  color: string;
+  quality: number;
+  lowcraft?: number;
+  strange?: boolean;
+  effect?: number;
+  spelled?: boolean;
+  parts?: boolean;
+  killstreak?: number;
+  uncraft?: boolean;
+  series?: number;
 }
 
 export interface ButtonConfig {

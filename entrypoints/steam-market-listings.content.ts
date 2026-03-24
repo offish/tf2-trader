@@ -1,4 +1,5 @@
 import "@/styles/steam-market-listings.css";
+import { addAttributesToElement } from "@/utils/inventory";
 
 export default defineContentScript({
   matches: ["*://steamcommunity.com/market/listings/440/*"],
@@ -77,10 +78,7 @@ export default defineContentScript({
 
           itemImgEl.parentNode?.replaceChild(itemWrapper, itemImgEl);
           itemWrapper.appendChild(itemImgEl);
-          addAttributesToElement(
-            itemWrapper,
-            asset.descriptions ? asset : asset,
-          );
+          addAttributesToElement(itemWrapper, asset);
           rowEl.setAttribute("data-checked", "1");
         }
       });

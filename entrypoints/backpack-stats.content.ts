@@ -1,4 +1,6 @@
 import { processListings } from "@/utils/backpack";
+import { debounce } from "@/utils";
+import { createPricedbGraphIframe } from "@/utils/graph";
 
 export default defineContentScript({
   matches: ["*://backpack.tf/stats/*"],
@@ -48,14 +50,8 @@ export default defineContentScript({
 
       const wrapper = document.createElement("div");
       wrapper.id = "pricedb-graph-wrapper";
-      wrapper.style.margin = "20px 0";
-
-      wrapper.innerHTML = `
-      <iframe
-          src="https://pricedb.io/api/graph/${sku}"
-          style="width: 100%; height: 500px; border: none; background: #1b1b1b; margin: 10px 0; border-radius: 4px; border: 1px solid #222;"
-      ></iframe>
-      `;
+      wrapper.style.cssText = "margin:20px 0;background:#1b1b1b;border:1px solid #222;border-radius:4px;";
+      wrapper.appendChild(createPricedbGraphIframe(sku));
 
       const nativeGraphSection = document.querySelector(
         ".guttered:has(.stats-graph)",
@@ -71,7 +67,7 @@ export default defineContentScript({
 
     const contentWrapper =
       document.querySelector(".main-content") || document.body;
-    const observer = new MutationObserver(processListings);
+    const observer = new MutationObserver(debounce(processListings, 300));
 
     observer.observe(contentWrapper, {
       childList: true,
