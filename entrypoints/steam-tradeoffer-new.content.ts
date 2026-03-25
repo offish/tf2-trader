@@ -58,24 +58,6 @@ export default defineContentScript({
     // Inventory loading
     // -------------------------------------------------------------------------
 
-    interface ParsedItem {
-      id: string;
-      name: string;
-    }
-
-    // Steam rgInventory entry — merged asset + description, same shape Steam's
-    // loadInventory produces so it can be injected when an item is missing.
-    interface SteamRgEntry {
-      id: string;
-      assetid: string;
-      classid: string;
-      instanceid: string;
-      amount: string;
-      appid: number;
-      contextid: string;
-      [key: string]: any;
-    }
-
     function nameFromDescription(desc: any): string {
       let name: string = desc.market_hash_name || desc.name || "";
 
@@ -589,7 +571,9 @@ export default defineContentScript({
 
       console.log("[tf2-trader] Calling RefreshTradeStatus...");
       win2.RefreshTradeStatus(win2.g_rgCurrentTradeStatus, true);
-      console.log("[tf2-trader] Done — review trade and click Send Trade Offer.");
+      console.log(
+        "[tf2-trader] Done — review trade and click Send Trade Offer.",
+      );
       // The live panel observer (startLiveValuePanel) will pick up the new
       // trade items automatically now that RefreshTradeStatus has run.
     } catch (err) {

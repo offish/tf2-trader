@@ -5,107 +5,74 @@ export default defineContentScript({
   matches: ["*://next.backpack.tf/stats*"],
 
   main() {
-    let isReordering = false;
+    let inserted = false;
+    let lastUrl = location.href;
 
     const getSku = (): string | null => {
       const link = document.querySelector(
         'a[href*="marketplace.tf/items/tf2/"]',
       );
-      return (
-        link?.getAttribute("href")?.match(/tf2\/(\d+;\d+;[a-zA-Z0-9]+)/)?.[1] ||
-        null
-      );
+      const href = link?.getAttribute("href");
+      if (!href) return null;
+      return href.split("/tf2/")[1]?.split("?")[0] ?? null;
     };
 
-    const organizeLayout = () => {
-      if (isReordering) return;
+    const insertGraph = () => {
+      if (inserted || document.getElementById("pricedb-graph-wrapper")) return;
 
-      const container = document.getElementById("content");
-      if (!container) return;
+      const content = document.getElementById("content");
+      if (!content) return;
 
-      const columns = Array.from(container.children);
+      const suggestionsWrapper = Array.from(content.children).find((el) => {
+        const header = el.querySelector(".card__header__title span");
+        return header?.textContent?.trim() === "Suggestions";
+      });
 
-      const buyOrders = columns.find((el) =>
-        el.textContent?.includes("Buy Orders"),
-      );
-      const sellOrders = columns.find((el) =>
-        el.textContent?.includes("Sell Orders"),
-      );
-      const trends = columns.find((el) =>
-        el.textContent?.includes("Classifieds Trends"),
-      );
-      const history = columns.find((el) => el.textContent?.includes("History"));
-      const suggestions = columns.find((el) =>
-        el.textContent?.includes("Suggestions"),
-      );
+      if (!suggestionsWrapper) return;
 
-      let graph = document.getElementById("pricedb-graph-wrapper");
+      const sku = getSku();
+      if (!sku) return;
 
-      if (!graph) {
-        const sku = getSku();
-        if (sku) {
-          graph = document.createElement("div");
-          graph.id = "pricedb-graph-wrapper";
-          graph.className = "col-12 mb-3";
-          const card = document.createElement("div");
-          card.className = "card p-2";
-          card.style.cssText = "background:#273241;border:1px solid #222;";
-          card.appendChild(createPricedbGraphIframe(sku));
-          graph.appendChild(card);
-          container.appendChild(graph);
-        }
-      }
+      const graph = document.createElement("div");
+      graph.id = "pricedb-graph-wrapper";
+      graph.className = "col-12";
 
-      isReordering = true;
+      graph.innerHTML = `
+        <div class="card p-2" style="background: #273241; border: 1px solid #222;">
+          <iframe
+            src="https://pricedb.io/api/graph/${sku}"
+            style="width: 100%; height: 500px; border: none; border-radius: 4px;"
+          ></iframe>
+        </div>
+      `;
 
-      if (
-        sellOrders &&
-        buyOrders &&
-        sellOrders.nextElementSibling !== buyOrders
-      ) {
-        sellOrders.after(buyOrders);
-      }
-
-      if (graph && buyOrders && graph.previousElementSibling !== buyOrders) {
-        buyOrders.after(graph);
-      }
-
-      if (trends && graph && trends.previousElementSibling !== graph) {
-        graph.after(trends);
-      }
-
-      if (history && trends && history.previousElementSibling !== trends) {
-        trends.after(history);
-      }
-
-      if (
-        suggestions &&
-        history &&
-        suggestions.previousElementSibling !== history
-      ) {
-        history.after(suggestions);
-      }
-
-      isReordering = false;
+      content.insertBefore(graph, suggestionsWrapper);
+      inserted = true;
     };
+
+    const reset = () => {
+      inserted = false;
+      document.getElementById("pricedb-graph-wrapper")?.remove();
+    };
+
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
     const observer = new MutationObserver(() => {
-      processListings();
-      organizeLayout();
+      if (location.href !== lastUrl) {
+        lastUrl = location.href;
+        reset();
+      }
+
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        processListings();
+        insertGraph();
+      }, 300);
     });
 
-    observer.observe(document.body, { childList: true, subtree: true });
-
-    const forceRender = () => {
-      const content = document.getElementById("content");
-      if (content) {
-        window.dispatchEvent(new Event("scroll"));
-        window.scrollBy(0, 1);
-        setTimeout(() => window.scrollBy(0, -1), 50);
-      }
-    };
-
-    organizeLayout();
-    [200, 1000, 2500].forEach((delay) => setTimeout(forceRender, delay));
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
   },
 });

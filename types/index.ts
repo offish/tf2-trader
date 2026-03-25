@@ -5,20 +5,18 @@ export interface SteamItem {
   classid: string;
   instanceid: string;
   amount: string;
-  descriptions?: ItemDescription[];
-  tags?: ItemTag[];
   market_hash_name?: string;
-  name?: string;
   type?: string;
-  tradable?: number;
-  marketable?: number;
-  commodity?: number;
   name_color?: string;
   background_color?: string;
   icon_url?: string;
   icon_url_large?: string;
   fraudwarnings?: string[];
   actions?: Array<{ link: string; name: string }>;
+  descriptions?: Array<{ value: string; color?: string }>;
+  tags?: Array<{ category: string; internal_name?: string; localized_tag_name?: string; category_name?: string; color?: string }>;
+  appdata?: { def_index?: string };
+  [key: string]: unknown;
 }
 
 export interface ItemDescription {
@@ -47,7 +45,6 @@ export interface TradeOfferSummary {
   keys: number;
   metal: number;
   items: Map<string, number>;
-}
 
 export interface Currencies {
   keys?: number;
@@ -108,5 +105,20 @@ export interface AggregatedItem {
   props: ItemProps;
 }
 
-export const TF2_APPID = 440;
-export const TF2_CONTEXTID = "2";
+export interface ParsedItem {
+  id: string;
+  name: string;
+}
+
+// Steam rgInventory entry — merged asset + description, same shape Steam's
+// loadInventory produces so it can be injected when an item is missing.
+export interface SteamRgEntry {
+  id: string;
+  assetid: string;
+  classid: string;
+  instanceid: string;
+  amount: string;
+  appid: number;
+  contextid: string;
+  [key: string]: any;
+}

@@ -56,9 +56,7 @@ export const getKeysListedValue = (items: HTMLElement[], keyValue: number) => {
   return refinedToKeys(totalRef, keyValue);
 };
 
-export const stringToCurrencies = (
-  str: string | undefined,
-): Currencies | null => {
+const stringToCurrencies = (str: string | undefined): Currencies | null => {
   if (!str) return null;
 
   const cleaned = str.trim().replace(/\s+/g, " ");
@@ -109,10 +107,40 @@ export const processListings = () => {
       intent = intentEl?.classList.contains("text-sell") ? "sell" : "buy";
 
       const priceEl = listingEl.querySelector(".item__price");
+
       if (priceEl) {
         const priceClone = priceEl.cloneNode(true) as HTMLElement;
         priceClone.querySelector("svg")?.remove();
         currencies = stringToCurrencies(priceClone.textContent?.trim() || "");
+      }
+
+      const headerLinkEl = listingEl.querySelector(
+        "a.listing__details__header",
+      );
+      if (headerLinkEl) {
+        const rawName = Array.from(headerLinkEl.childNodes)
+          .filter((n) => n.nodeType === Node.TEXT_NODE)
+          .map((n) => n.textContent?.trim())
+          .filter(Boolean)
+          .join(" ")
+          .trim();
+        if (rawName) {
+          (listingEl as any)._bp_item_name = rawName;
+        }
+      }
+
+      // Extract for_item (listing ID) from the classifieds href, e.g. /classifieds/440_16810958958
+      if (intent === "sell") {
+        const listingLinkEl = listingEl.querySelector(
+          "a.listing__details__header",
+        ) as HTMLAnchorElement | null;
+        const listingHref = listingLinkEl?.getAttribute("href") || "";
+        const forItemMatch = listingHref.match(/\/classifieds\/(\d+)_(\d+)$/);
+
+        if (forItemMatch) {
+          (listingEl as any)._bp_for_item =
+            `${forItemMatch[1]}_2_${forItemMatch[2]}`;
+        }
       }
     } else {
       const itemEl = listingEl.querySelector(".item") as HTMLElement;
@@ -147,6 +175,7 @@ export const processListings = () => {
             )
             ?.textContent?.trim() ||
           "";
+
         if (rawName) {
           (listingEl as any)._bp_item_name = rawName;
         }
@@ -184,6 +213,11 @@ export const processListings = () => {
         | undefined;
       if (itemNameToEmbed) {
         url.searchParams.set("listing_item_name", itemNameToEmbed);
+      }
+
+      const forItem = (listingEl as any)._bp_for_item as string | undefined;
+      if (forItem && intent === "sell") {
+        url.searchParams.set("for_item", forItem);
       }
 
       offerButtonEl.href = url.toString();

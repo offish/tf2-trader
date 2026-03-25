@@ -32,9 +32,8 @@
 - One-click "Check price on PriceDB.io" button for inventory items
 - Link to PriceDB.io when right clicking items on Scrap.TF
 - Integrated PriceDB.io price graph on Backpack.TF stats pages (including next.backpack.tf)
-- Listing parameters included in trade URLs on Backpack.TF and next.backpack.tf
-- Item name parameter support in Backpack.TF trade URLs
-- Graphs and additional stats displayed below listings on Backpack.TF stats pages (including next.backpack.tf)
+- Listing parameters included in Trade URLs on Backpack.TF and next.backpack.tf
+- Item name parameter support in Backpack.TF Trade URLs
 - Quick access buttons for rep.tf and Backpack.TF on trade offers
 - Additional item borders and icons in inventory views
 - Quick link to legacy Backpack.TF pages from Marketplace.TF item listings

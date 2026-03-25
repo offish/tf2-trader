@@ -18,7 +18,10 @@ export default defineBackground(() => {
       if (msg?.type === "pricedb_fetch" && msg.sku) {
         fetch(`https://pricedb.io/api/item/${encodeURIComponent(msg.sku)}`)
           .then(async (res) => {
-            if (!res.ok) { sendResponse(null); return; }
+            if (!res.ok) {
+              sendResponse(null);
+              return;
+            }
             const data = await res.json();
             const price = data?.price ?? data?.sell ?? data;
             const keys = typeof price?.keys === "number" ? price.keys : 0;
@@ -34,7 +37,10 @@ export default defineBackground(() => {
         const q = (msg.query as string).replace(/\bSeries\s+(?=#\d)/i, "");
         fetch(`https://pricedb.io/api/search?q=${encodeURIComponent(q)}&limit=5`)
           .then(async (res) => {
-            if (!res.ok) { sendResponse(null); return; }
+            if (!res.ok) {
+              sendResponse(null);
+              return;
+            }
             const data = await res.json();
             const results: any[] = data?.data?.results ?? [];
             if (results.length === 0) { sendResponse(null); return; }
