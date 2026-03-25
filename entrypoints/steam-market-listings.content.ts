@@ -110,84 +110,182 @@ export default defineContentScript({
       addAttributesToResults();
     }
 
-    const isCommodityItem =
-      document.querySelector(".market_commodity_order_block") !== null;
     const fullName = getItemNameFromUrl();
-    const selector = isCommodityItem
-      ? ".market_commodity_order_block"
-      : "#largeiteminfo_warning";
 
-    const elementToInsertTo = document.querySelector(selector);
+    const sites = [
+      {
+        name: "Skinport.com",
+        url: `https://skinport.com/market/440?search=${encodeURIComponent(fullName ?? "")}&r=guidetf`,
+        icon: "https://skinport.com/favicon.ico",
+      },
+      {
+        name: "ManncoStore",
+        url: "https://mannco.store/?ref=guidetf",
+        icon: "https://mannco.store/statics/img/logo.svg",
+      },
+      {
+        name: "Tradeit.gg",
+        url: "https://tradeit.gg/tf2/trade?aff=guide",
+        icon: "https://tradeit.gg/images/logo-full.svg",
+      },
+      {
+        name: "MarketplaceTF",
+        url: "https://marketplace.tf/",
+        icon: "https://marketplace.tf/favicon.ico",
+      },
+      {
+        name: "MerchantTF",
+        url: "https://merchant.tf/r/guide",
+        icon: "https://merchant.tf/favicon.ico",
+      },
+      {
+        name: "CS.TRADE",
+        url: "https://cs.trade/ref/TF2GUIDES",
+        icon: "https://cs.trade/favicon.ico",
+      },
+      {
+        name: "SkinsCash",
+        url: "https://skins.cash/user/ref/76561198253325712",
+        icon: "https://skins.cash/favicon.ico",
+      },
+    ];
 
-    if (elementToInsertTo) {
-      const sites = [
-        {
-          id: "skinport",
-          name: "Skinport.com",
-          url: `https://skinport.com/market/440?search=${fullName}&r=guidetf`,
-          icon: "https://skinport.com/favicon.ico",
-        },
-        {
-          id: "manncostore",
-          name: "ManncoStore",
-          url: "https://mannco.store/?ref=guidetf",
-          icon: "https://mannco.store/statics/img/logo.svg",
-        },
-        {
-          id: "tradeit",
-          name: "Tradeit.gg",
-          url: "https://tradeit.gg/tf2/trade?aff=guide",
-          icon: "https://tradeit.gg/images/logo-full.svg",
-        },
-        {
-          id: "marketplacetf",
-          name: "MarketplaceTF",
-          url: "https://marketplace.tf/",
-          icon: "https://marketplace.tf/favicon.ico",
-        },
-        {
-          id: "merchanttf",
-          name: "MerchantTF",
-          url: "https://merchant.tf/r/guide",
-          icon: "https://merchant.tf/favicon.ico",
-        },
-        {
-          id: "cstrade",
-          name: "CS.TRADE",
-          url: "https://cs.trade/ref/TF2GUIDES",
-          icon: "https://cs.trade/favicon.ico",
-        },
-        {
-          id: "skinscash",
-          name: "SkinsCash",
-          url: "https://skins.cash/user/ref/76561198253325712",
-          icon: "https://skins.cash/favicon.ico",
-        },
-      ];
-      const adsHtml = sites
-        .map(
-          (site) => `
-        <div class="site_ad">
-          <a href="${site.url}" target="_blank" class="site_ad_link">
-            <div class="site_ad_icon_wrapper">
-              <img alt="${site.name}" src="${site.icon}">
-            </div>
-            <span class="site_ad_name">${site.name}</span>
-          </a>
-        </div>
-      `,
-        )
-        .join("");
+    const buildReferralBlock = () => {
+      const referralContainer = document.createElement("div");
+      referralContainer.className = "referral-container";
+      // Apply critical layout styles inline so Steam's CSS cannot override them.
+      referralContainer.style.cssText =
+        "display:block;overflow:visible;padding:12px 0;margin:8px 0;";
 
-      elementToInsertTo.insertAdjacentHTML(
-        "beforebegin",
-        `<div class="referral-container">
-      <span class="sites_ad_title">You can save 20-35% by buying this item on these trusted marketplaces:</span>
-      <div class="site_ads">
-        ${adsHtml}
-      </div>
-    </div>`,
+      const title = document.createElement("span");
+      title.className = "sites_ad_title";
+      title.style.cssText = "display:block;font-size:1.25em;color:#cde46f;margin-bottom:8px;";
+      title.textContent =
+        "You can save 20-35% by buying this item on these trusted marketplaces:";
+      referralContainer.appendChild(title);
+
+      const adsContainer = document.createElement("div");
+      adsContainer.className = "tf2t-site-ads";
+      // Must use setProperty with 'important' — Steam's stylesheet has
+      // display:none !important on .site_ads and .site_ad class names.
+      adsContainer.style.setProperty("display", "flex", "important");
+      adsContainer.style.cssText += "flex-wrap:wrap;align-items:flex-start;justify-content:center;gap:25px;margin:10px auto;max-width:100%;overflow:visible;height:auto;";
+      adsContainer.style.setProperty("display", "flex", "important");
+
+      sites.forEach((site) => {
+        const siteAd = document.createElement("div");
+        siteAd.className = "tf2t-site-ad";
+        siteAd.style.setProperty("display", "block", "important");
+        siteAd.style.cssText += "text-align:center;flex:0 0 auto;";
+        siteAd.style.setProperty("display", "block", "important");
+
+        const link = document.createElement("a");
+        link.href = site.url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.className = "tf2t-site-ad-link";
+        link.style.setProperty("display", "inline-block", "important");
+        link.style.cssText += "text-decoration:none;color:inherit;white-space:nowrap;font-size:1.1rem;";
+        link.style.setProperty("display", "inline-block", "important");
+
+        const iconWrapper = document.createElement("div");
+        iconWrapper.style.setProperty("display", "block", "important");
+
+        const img = document.createElement("img");
+        img.alt = site.name;
+        img.src = site.icon;
+        img.style.setProperty("display", "block", "important");
+        img.style.cssText += "margin:0 auto 5px;height:50px;max-width:100%;object-fit:contain;";
+        img.style.setProperty("display", "block", "important");
+        iconWrapper.appendChild(img);
+
+        const nameSpan = document.createElement("span");
+        nameSpan.className = "tf2t-site-ad-name";
+        nameSpan.style.setProperty("display", "block", "important");
+        nameSpan.textContent = site.name;
+
+        link.appendChild(iconWrapper);
+        link.appendChild(nameSpan);
+        siteAd.appendChild(link);
+        adsContainer.appendChild(siteAd);
+      });
+
+      referralContainer.appendChild(adsContainer);
+      return referralContainer;
+    };
+
+    const tryInsertReferralBlock = () => {
+      // Already inserted — do nothing.
+      if (document.querySelector(".referral-container")) return true;
+
+      // For commodity items we MUST insert before #market_commodity_container
+      // itself (not before a child of it) so our block lands in unconstrained
+      // outer page flow. Use closest() from the order block as a robust fallback
+      // so we never accidentally land inside the container.
+      const orderBlock = document.querySelector<HTMLElement>(
+        ".market_commodity_order_block",
       );
+      const isCommodityItem = orderBlock !== null;
+
+      const block = buildReferralBlock();
+
+      if (isCommodityItem) {
+        // Ideal position: before the price history chart (after the item info section).
+        const priceHistory = document.querySelector<HTMLElement>("#pricehistory");
+        if (priceHistory?.parentNode) {
+          priceHistory.parentNode.insertBefore(block, priceHistory);
+        } else {
+          // Fallback: after the item info div (market_listing_iteminfo or commodity container).
+          const itemInfo =
+            document.querySelector<HTMLElement>("#market_commodity_container") ??
+            orderBlock?.closest<HTMLElement>("[class*='market_listing']") ??
+            orderBlock?.parentElement ??
+            null;
+          if (!itemInfo?.parentNode) return false;
+          itemInfo.parentNode.insertBefore(block, itemInfo.nextSibling);
+        }
+      } else {
+        // For non-commodity items, insert after the large item info panel.
+        const itemInfo =
+          document.querySelector<HTMLElement>("#largeiteminfo_warning") ??
+          document.querySelector<HTMLElement>("#largeiteminfo");
+        if (!itemInfo?.parentNode) return false;
+        itemInfo.parentNode.insertBefore(block, itemInfo.nextSibling);
+      }
+
+      // Force overflow:visible on ALL ancestors (not just hidden/clip — also
+      // auto/scroll with fixed heights can clamp our block). Apply immediately,
+      // after paint, and at 500ms/2s to beat any delayed Steam JS that reasserts.
+      const fixOverflow = () => {
+        let el: HTMLElement | null = block.parentElement;
+        let depth = 0;
+        while (el && el !== document.body && depth < 10) {
+          const s = getComputedStyle(el);
+          if (s.overflow !== "visible" || s.overflowY !== "visible") {
+            el.style.setProperty("overflow", "visible", "important");
+            el.style.setProperty("height", "auto", "important");
+            el.style.setProperty("max-height", "none", "important");
+          }
+          el = el.parentElement;
+          depth++;
+        }
+      };
+
+      fixOverflow();
+      requestAnimationFrame(fixOverflow);
+      setTimeout(fixOverflow, 500);
+      setTimeout(fixOverflow, 2000);
+
+      return true;
+    };
+
+    if (!tryInsertReferralBlock()) {
+      // Elements not yet in the DOM (Steam loads them dynamically) — retry via
+      // MutationObserver so we don't miss them.
+      const observer = new MutationObserver(() => {
+        if (tryInsertReferralBlock()) observer.disconnect();
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
     }
   },
 });

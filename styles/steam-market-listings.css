@@ -57,36 +57,49 @@
   margin-right: 4%;
 }
 
-.sites_ad_title {
-  font-size: 1.25em;
-  color: #cde46f;
+.referral-container {
+  display: block !important;
+  overflow: visible !important;
+  padding: 12px 0;
 }
 
-.site_ads {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: center;
+.sites_ad_title {
+  display: block !important;
+  font-size: 1.25em;
+  color: #cde46f;
+  margin-bottom: 8px;
+}
+
+.tf2t-site-ads {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
   gap: 25px;
   margin: 10px auto;
   max-width: 100%;
+  overflow: visible !important;
+  height: auto !important;
+  visibility: visible !important;
 }
 
-.site_ad {
+.tf2t-site-ad {
+  display: block !important;
   text-align: center;
   flex: 0 0 auto;
 }
 
-.site_ad_link {
+.tf2t-site-ad-link {
   font-size: 1.1rem;
   text-decoration: none;
-  color: inherit;
-  display: inline-block;
+  color: inherit !important;
+  display: inline-block !important;
   white-space: nowrap;
+  visibility: visible !important;
 }
 
-.site_ad_link img {
-  display: block;
+.tf2t-site-ad-link img {
+  display: block !important;
   margin: 0 auto 5px;
   height: 50px;
   max-width: 100%;
