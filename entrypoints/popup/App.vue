@@ -17,11 +17,11 @@ onMounted(async () => {
 <template>
   <div class="app-container">
     <div v-if="view === 'home'">
+      <button class="gear-btn" title="Settings" @click="view = 'settings'">⚙</button>
       <div class="home-header">
         <a>
           <img src="/logo.svg" class="logo" alt="TF2 Trader Logo" />
         </a>
-        <button class="gear-btn" title="Settings" @click="view = 'settings'">⚙</button>
       </div>
       <Popup msg="TF2 Trader" :version="version" />
     </div>
@@ -34,10 +34,10 @@ onMounted(async () => {
 <style scoped>
 .app-container {
   min-width: 300px;
+  position: relative;
 }
 
 .home-header {
-  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -56,8 +56,7 @@ onMounted(async () => {
 .gear-btn {
   position: absolute;
   right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 10px;
   background: none;
   border: 1px solid #444;
   border-radius: 4px;
