@@ -9,8 +9,12 @@ export default defineContentScript({
 
   async main() {
     const settings = await getSettingsFromBridge();
+
     if (!settings.sites.steamMarket) return;
-    const autobotEnabled = settings.autobot.enabled && settings.autobot.sites.steamMarket;
+
+    const autobotEnabled =
+      settings.autobot.enabled && settings.autobot.sites.steamMarket;
+
     const getItemIdsFromRow = (rowEl: HTMLElement) => {
       const buyButtonLinkEl = rowEl.querySelector(
         "div.market_listing_buy_button a",
@@ -40,6 +44,7 @@ export default defineContentScript({
       const asset = assets?.[ids.appid]?.[ids.contextid]?.[ids.assetid];
       return asset;
     };
+
     const addAttributesToResults = () => {
       const resultsRows = document.getElementById("searchResultsRows");
 
@@ -153,6 +158,11 @@ export default defineContentScript({
         url: "https://skins.cash/user/ref/76561198253325712",
         icon: "https://skins.cash/favicon.ico",
       },
+      {
+        name: "CTrade.tf",
+        url: "https://ctrade.tf?referred_by=CONFERN",
+        icon: "https://ctrade.tf/icon.ico",
+      },
     ];
 
     const buildReferralBlock = () => {
@@ -164,7 +174,8 @@ export default defineContentScript({
 
       const title = document.createElement("span");
       title.className = "sites_ad_title";
-      title.style.cssText = "display:block;font-size:1.25em;color:#cde46f;margin-bottom:8px;";
+      title.style.cssText =
+        "display:block;font-size:1.25em;color:#cde46f;margin-bottom:8px;";
       title.textContent =
         "You can save 20-35% by buying this item on these trusted marketplaces:";
       referralContainer.appendChild(title);
@@ -174,7 +185,8 @@ export default defineContentScript({
       // Must use setProperty with 'important' — Steam's stylesheet has
       // display:none !important on .site_ads and .site_ad class names.
       adsContainer.style.setProperty("display", "flex", "important");
-      adsContainer.style.cssText += "flex-wrap:wrap;align-items:flex-start;justify-content:center;gap:25px;margin:10px auto;max-width:100%;overflow:visible;height:auto;";
+      adsContainer.style.cssText +=
+        "flex-wrap:wrap;align-items:flex-start;justify-content:center;gap:25px;margin:10px auto;max-width:100%;overflow:visible;height:auto;";
       adsContainer.style.setProperty("display", "flex", "important");
 
       sites.forEach((site) => {
@@ -190,7 +202,8 @@ export default defineContentScript({
         link.rel = "noopener noreferrer";
         link.className = "tf2t-site-ad-link";
         link.style.setProperty("display", "inline-block", "important");
-        link.style.cssText += "text-decoration:none;color:inherit;white-space:nowrap;font-size:1.1rem;";
+        link.style.cssText +=
+          "text-decoration:none;color:inherit;white-space:nowrap;font-size:1.1rem;";
         link.style.setProperty("display", "inline-block", "important");
 
         const iconWrapper = document.createElement("div");
@@ -200,7 +213,8 @@ export default defineContentScript({
         img.alt = site.name;
         img.src = site.icon;
         img.style.setProperty("display", "block", "important");
-        img.style.cssText += "margin:0 auto 5px;height:50px;max-width:100%;object-fit:contain;";
+        img.style.cssText +=
+          "margin:0 auto 5px;height:50px;max-width:100%;object-fit:contain;";
         img.style.setProperty("display", "block", "important");
         iconWrapper.appendChild(img);
 
@@ -240,7 +254,9 @@ export default defineContentScript({
             autobotBtn.addEventListener("click", () => {
               navigator.clipboard.writeText(`!add sku=${sku}`);
               autobotBtn.textContent = "Copied!";
-              setTimeout(() => { autobotBtn.textContent = "Copy !add"; }, 1500);
+              setTimeout(() => {
+                autobotBtn.textContent = "Copy !add";
+              }, 1500);
             });
           });
         }
@@ -269,13 +285,16 @@ export default defineContentScript({
 
       if (isCommodityItem) {
         // Ideal position: before the price history chart (after the item info section).
-        const priceHistory = document.querySelector<HTMLElement>("#pricehistory");
+        const priceHistory =
+          document.querySelector<HTMLElement>("#pricehistory");
         if (priceHistory?.parentNode) {
           priceHistory.parentNode.insertBefore(block, priceHistory);
         } else {
           // Fallback: after the item info div (market_listing_iteminfo or commodity container).
           const itemInfo =
-            document.querySelector<HTMLElement>("#market_commodity_container") ??
+            document.querySelector<HTMLElement>(
+              "#market_commodity_container",
+            ) ??
             orderBlock?.closest<HTMLElement>("[class*='market_listing']") ??
             orderBlock?.parentElement ??
             null;

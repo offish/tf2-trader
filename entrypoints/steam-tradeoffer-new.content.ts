@@ -1,5 +1,6 @@
-import { renderValuePanel, startLiveValuePanel } from "@/utils/trade-panel";
+import { startLiveValuePanel } from "@/utils/trade-panel";
 import { getSettingsFromBridge } from "@/utils/settings-bridge";
+import { ParsedItem, SteamRgEntry } from "@/types";
 
 export default defineContentScript({
   matches: ["https://steamcommunity.com/tradeoffer/new*"],
@@ -16,7 +17,15 @@ export default defineContentScript({
     }
 
     // Start on every tradeoffer/new page — no listing params required.
-    startLiveValuePanel();
+    https: startLiveValuePanel();
+
+    // Don't run if user is using instant-trade-offer (EurekaEffect/Brom127) script
+    if (
+      params.has("tscript_id") ||
+      params.has("tscript_price") ||
+      params.has("tscript_name")
+    )
+      return;
 
     // Only run the auto-build flow when opened from a backpack.tf listing link.
     if (
@@ -186,6 +195,76 @@ export default defineContentScript({
       return { ref, rec, scrap };
     }
 
+    /**
+     * Converts picked currency items back to a { keys, metal } summary so we
+     * can compare against the listing's requested amounts.
+     */
+    function pickedCurrencyValue(items: ParsedItem[]): {
+      keys: number;
+      metal: number;
+    } {
+      let keys = 0;
+      let totalScrap = 0;
+      for (const item of items) {
+        if (item.name === "Mann Co. Supply Crate Key") keys++;
+        else if (item.name === "Refined Metal") totalScrap += 9;
+        else if (item.name === "Reclaimed Metal") totalScrap += 3;
+        else if (item.name === "Scrap Metal") totalScrap += 1;
+      }
+      return { keys, metal: totalScrap / 9 };
+    }
+
+    /**
+     * Validates that the picked currency matches the listing exactly.
+     * Metal comparison uses scrap-level integer math to avoid float drift
+     * (e.g. 1.33 ref == 12 scrap).  Shows a non-blocking alert if there's a
+     * mismatch so the user can review before sending.
+     */
+    function validateCurrencyMatch(
+      picked: ParsedItem[],
+      requestedKeys: number,
+      requestedMetal: number,
+    ): void {
+      const { keys: pickedKeys, metal: pickedMetal } =
+        pickedCurrencyValue(picked);
+
+      const requestedScrap = Math.round(requestedMetal * 9);
+      const pickedScrap = Math.round(pickedMetal * 9);
+
+      const keyMismatch = pickedKeys !== requestedKeys;
+      const metalMismatch = pickedScrap !== requestedScrap;
+
+      if (!keyMismatch && !metalMismatch) return;
+
+      const lines: string[] = [
+        "⚠️ TF2 Trader: Currency mismatch detected!\n",
+        "The listing requested:",
+        `  Keys:  ${requestedKeys}`,
+        `  Metal: ${requestedMetal} ref (${requestedScrap} scrap)\n`,
+        "Trade was built with:",
+        `  Keys:  ${pickedKeys}`,
+        `  Metal: ${pickedMetal.toFixed(2)} ref (${pickedScrap} scrap)\n`,
+      ];
+
+      if (keyMismatch) {
+        lines.push(
+          `❌ Key count differs: expected ${requestedKeys}, got ${pickedKeys}.`,
+        );
+      }
+      if (metalMismatch) {
+        const diff = pickedScrap - requestedScrap;
+        lines.push(
+          `❌ Metal differs by ${Math.abs(diff)} scrap (${diff > 0 ? "overpaying" : "underpaying"}).`,
+        );
+      }
+
+      lines.push(
+        "\nDouble-check the trade before sending. You can close this offer and adjust manually.",
+      );
+
+      alert(lines.join("\n"));
+    }
+
     // Fetch asset IDs committed to pending outgoing trade offers so we can
     // avoid re-selecting those same currency items.  Parses assetid patterns
     // from Steam's embedded JavaScript on the sent-offers page.  Fails silently
@@ -295,7 +374,9 @@ export default defineContentScript({
         "items",
       );
 
-      console.log("[tf2-trader] Checking pending sent offers for locked items...");
+      console.log(
+        "[tf2-trader] Checking pending sent offers for locked items...",
+      );
       const lockedAssetIds = await fetchSentOfferAssetIds();
       if (lockedAssetIds.size > 0) {
         console.log(
@@ -354,6 +435,10 @@ export default defineContentScript({
           "[tf2-trader] Currency items to give:",
           currencyItems.map((i) => i.name),
         );
+
+        // Validate that what we picked matches the listing exactly
+        validateCurrencyMatch(currencyItems, keysNeeded, metalNeeded);
+
         currencyItems.forEach((i) => itemsToGive.push(toTradeItem(i.id)));
       } else if (intent === "0") {
         // Buy listing — they are buying, we are selling our item + receiving currency
@@ -381,6 +466,10 @@ export default defineContentScript({
           "[tf2-trader] Currency items to receive:",
           currencyItems.map((i) => i.name),
         );
+
+        // Validate that what we picked matches the listing exactly
+        validateCurrencyMatch(currencyItems, keysNeeded, metalNeeded);
+
         currencyItems.forEach((i) => itemsToReceive.push(toTradeItem(i.id)));
       } else {
         throwError("Unknown listing_intent value");

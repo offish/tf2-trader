@@ -4,10 +4,25 @@
 
 <h1 align="center">TF2 Trader</h1>
 
-<p align="center">
-  Extension for Team Fortress 2 Trading.<br>
-  Built using WXT and Vue 3.
-</p>
+<div align="center">
+  <a href="https://github.com/offish/tf2-trader/blob/master/LICENSE">
+    <img src="https://img.shields.io/github/license/offish/tf2-trader.svg" />
+  </a>
+  <a href="https://github.com/offish/tf2-trader/issues">
+    <img src="https://img.shields.io/github/issues/offish/tf2-trader.svg" />
+  </a>
+  <a href="https://github.com/offish/tf2-trader">
+    <img src="https://img.shields.io/github/repo-size/offish/tf2-trader.svg" />
+  </a>
+  <a href="https://pricedb.io/discord">
+    <img src="https://img.shields.io/discord/1419683838002593814?color=7289da&label=Discord&logo=discord" />
+  </a>
+
+<br><br>
+Extension for Team Fortress 2 Trading.<br>
+Built using WXT and Vue 3.
+
+</div>
 
 <p align="center">
   <a href="https://chromewebstore.google.com/detail/tf2-trader/gmicpekfpbikhibodgokfpghadkclhoe">
