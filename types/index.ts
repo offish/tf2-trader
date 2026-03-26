@@ -45,6 +45,7 @@ export interface TradeOfferSummary {
   keys: number;
   metal: number;
   items: Map<string, number>;
+}
 
 export interface Currencies {
   keys?: number;
@@ -110,6 +111,43 @@ export interface ParsedItem {
   name: string;
 }
 
+// ---------------------------------------------------------------------------
+// Settings
+// ---------------------------------------------------------------------------
+
+export type SiteKey =
+  | "backpackStats"
+  | "backpackClassifieds"
+  | "nextBackpackStats"
+  | "nextBackpackClassifieds"
+  | "steamInventory"
+  | "steamMarket"
+  | "steamTradeOfferNew"
+  | "steamTradeOffer"
+  | "steamTradeOffers"
+  | "steamTradeHistory"
+  | "steamProfile"
+  | "backpackProfile"
+  | "marketplace"
+  | "scrapTf"
+  | "stnTrading";
+
+export type AutobotSiteKey =
+  | "backpackStats"
+  | "nextBackpackStats"
+  | "pricedb"
+  | "steamMarket"
+  | "steamInventory";
+
+export interface Settings {
+  sites: Record<SiteKey, boolean>;
+  autobot: {
+    enabled: boolean;
+    sites: Record<AutobotSiteKey, boolean>;
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Steam rgInventory entry — merged asset + description, same shape Steam's
 // loadInventory produces so it can be injected when an item is missing.
 export interface SteamRgEntry {

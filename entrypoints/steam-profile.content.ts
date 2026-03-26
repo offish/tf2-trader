@@ -1,3 +1,5 @@
+import { getSettingsFromBridge } from "@/utils/settings-bridge";
+
 export default defineContentScript({
   matches: [
     "*://steamcommunity.com/id/*",
@@ -5,7 +7,10 @@ export default defineContentScript({
   ],
   world: "MAIN",
   runAt: "document_idle",
-  main() {
+  async main() {
+    const settings = await getSettingsFromBridge();
+    if (!settings.sites.steamProfile) return;
+
     // Only run on the profile root, not on sub-pages like /inventory/, /tradeoffers/, etc.
     const pathParts = window.location.pathname.split("/").filter(Boolean);
     if (pathParts.length > 2) return;

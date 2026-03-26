@@ -1,10 +1,13 @@
 import "@/styles/steam-inventory.css";
 import { addAttributesToElement, getItemAttributes, buildSku, getDefindexFromDesc } from "@/utils/inventory";
 import { fetchPricedbSearch } from "@/utils/pricedb-ipc";
+import { getSettingsFromBridge } from "@/utils/settings-bridge";
 
 // Page-lifetime cache: baseSku → resolved full SKU (avoids repeated network
 // calls when the user clicks the same crate type multiple times).
 const resolvedCrateSkus = new Map<string, string>();
+
+let autobotEnabled = false;
 
 // Guards concurrent injection for the same asset ID.
 const inProgressAssets = new Set<string>();
@@ -104,6 +107,22 @@ const injectPricedbButton = async (assetId: string) => {
       crateLink.textContent = "View on Crate.tf";
       crateLink.style.cssText = "color:#67C1F5;display:block;margin-top:3px;";
       container.appendChild(crateLink);
+    }
+
+    if (autobotEnabled) {
+      const autobotBtn = document.createElement("button");
+      autobotBtn.textContent = "Copy !add";
+      autobotBtn.title = `!add sku=${sku}`;
+      autobotBtn.style.cssText =
+        "background:#1a3a1a;border:1px solid #67d45e;color:#67d45e;" +
+        "padding:4px 10px;border-radius:4px;cursor:pointer;font-size:13px;" +
+        "display:block;margin-top:6px;";
+      autobotBtn.addEventListener("click", () => {
+        navigator.clipboard.writeText(`!add sku=${sku}`);
+        autobotBtn.textContent = "Copied!";
+        setTimeout(() => { autobotBtn.textContent = "Copy !add"; }, 1500);
+      });
+      container.appendChild(autobotBtn);
     }
 
     const descBlock = activePanel.querySelector<HTMLElement>(
@@ -213,7 +232,11 @@ export default defineContentScript({
     "*://steamcommunity.com/profiles/*/inventory*",
   ],
   world: "MAIN",
-  main() {
+  async main() {
+    const settings = await getSettingsFromBridge();
+    if (!settings.sites.steamInventory) return;
+    autobotEnabled = settings.autobot.enabled && settings.autobot.sites.steamInventory;
+
     const inventoryContainer = document.getElementById("inventories");
 
     if (inventoryContainer) {

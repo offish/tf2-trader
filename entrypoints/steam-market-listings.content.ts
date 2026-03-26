@@ -1,11 +1,16 @@
 import "@/styles/steam-market-listings.css";
 import { addAttributesToElement } from "@/utils/inventory";
+import { getSettingsFromBridge } from "@/utils/settings-bridge";
+import { fetchPricedbSearch } from "@/utils/pricedb-ipc";
 
 export default defineContentScript({
   matches: ["*://steamcommunity.com/market/listings/440/*"],
   world: "MAIN",
 
-  main() {
+  async main() {
+    const settings = await getSettingsFromBridge();
+    if (!settings.sites.steamMarket) return;
+    const autobotEnabled = settings.autobot.enabled && settings.autobot.sites.steamMarket;
     const getItemIdsFromRow = (rowEl: HTMLElement) => {
       const buyButtonLinkEl = rowEl.querySelector(
         "div.market_listing_buy_button a",
@@ -211,6 +216,39 @@ export default defineContentScript({
       });
 
       referralContainer.appendChild(adsContainer);
+
+      if (autobotEnabled) {
+        const autobotRow = document.createElement("div");
+        autobotRow.id = "tf2trader-autobot-row";
+        autobotRow.style.cssText = "margin-top:10px;";
+
+        const autobotBtn = document.createElement("button");
+        autobotBtn.id = "tf2trader-autobot-btn";
+        autobotBtn.textContent = "Copy !add";
+        autobotBtn.style.cssText =
+          "background:#1a3a1a;border:1px solid #67d45e;color:#67d45e;" +
+          "padding:6px 12px;border-radius:4px;cursor:pointer;font-size:13px;";
+        autobotBtn.title = "Resolve SKU and copy !add command";
+
+        // SKU lookup is async — do it once and cache
+        const itemName = fullName;
+        if (itemName) {
+          fetchPricedbSearch(itemName).then((result) => {
+            if (!result?.sku) return;
+            const sku = result.sku;
+            autobotBtn.title = `!add sku=${sku}`;
+            autobotBtn.addEventListener("click", () => {
+              navigator.clipboard.writeText(`!add sku=${sku}`);
+              autobotBtn.textContent = "Copied!";
+              setTimeout(() => { autobotBtn.textContent = "Copy !add"; }, 1500);
+            });
+          });
+        }
+
+        autobotRow.appendChild(autobotBtn);
+        referralContainer.appendChild(autobotRow);
+      }
+
       return referralContainer;
     };
 

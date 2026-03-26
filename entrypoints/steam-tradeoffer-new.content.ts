@@ -1,10 +1,14 @@
 import { renderValuePanel, startLiveValuePanel } from "@/utils/trade-panel";
+import { getSettingsFromBridge } from "@/utils/settings-bridge";
 
 export default defineContentScript({
   matches: ["https://steamcommunity.com/tradeoffer/new*"],
   world: "MAIN",
   runAt: "document_idle",
   async main() {
+    const settings = await getSettingsFromBridge();
+    if (!settings.sites.steamTradeOfferNew) return;
+
     const params = new URLSearchParams(location.search);
 
     function toTradeItem(assetId: string) {
