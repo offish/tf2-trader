@@ -15,21 +15,38 @@ export default defineContentScript({
     const pathParts = window.location.pathname.split("/").filter(Boolean);
     if (pathParts.length > 2) return;
 
-    const win = window as any;
-
-    // g_steamID is set by Steam on every profile page to the profile owner's Steam64 ID.
-    // Fall back to parsing /profiles/<steam64> from the URL if the variable isn't present.
-    const steam64: string | undefined =
-      win.g_steamID ||
-      window.location.pathname.match(/\/profiles\/(\d+)/)?.[1];
-
-    if (!steam64 || steam64 === "0") return;
+    const steam64 = await getSteam64();
+    if (!steam64) return;
 
     const ids = buildIds(steam64);
     addSteamIdButton(ids);
     addSidebarLinks(steam64);
   },
 });
+
+// ---------------------------------------------------------------------------
+// Steam64 resolution
+// ---------------------------------------------------------------------------
+
+// For /profiles/<steam64> the ID is right in the URL.
+// For /id/<vanityname> we fetch the profile as XML (same origin) which
+// includes a <steamID64> element – avoids relying on g_steamID which
+// returns the *logged-in* user's ID rather than the profile being viewed.
+async function getSteam64(): Promise<string | null> {
+  const profileMatch = window.location.pathname.match(/\/profiles\/(\d{17})/);
+  if (profileMatch) return profileMatch[1];
+
+  try {
+    const res = await fetch(
+      `${window.location.origin}${window.location.pathname}?xml=1`,
+    );
+    if (!res.ok) return null;
+    const text = await res.text();
+    return text.match(/<steamID64>(\d+)<\/steamID64>/)?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Steam ID conversion
