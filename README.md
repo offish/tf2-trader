@@ -5,7 +5,7 @@
 <h1 align="center">TF2 Trader</h1>
 
 <div align="center">
-  <a href="https://github.com/offish/tf2-trader/blob/master/LICENSE">
+  <a href="https://github.com/offish/tf2-trader/blob/main/LICENSE">
     <img src="https://img.shields.io/github/license/offish/tf2-trader.svg" />
   </a>
   <a href="https://github.com/offish/tf2-trader/issues">

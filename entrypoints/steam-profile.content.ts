@@ -1,10 +1,7 @@
 import { getSettingsFromBridge } from "@/utils/settings-bridge";
 
 export default defineContentScript({
-  matches: [
-    "*://steamcommunity.com/id/*",
-    "*://steamcommunity.com/profiles/*",
-  ],
+  matches: ["*://steamcommunity.com/id/*", "*://steamcommunity.com/profiles/*"],
   world: "MAIN",
   runAt: "document_idle",
   async main() {
@@ -19,7 +16,7 @@ export default defineContentScript({
     if (!steam64) return;
 
     const ids = buildIds(steam64);
-    addSteamIdButton(ids);
+    addSteamIdButton(ids, steam64);
     addSidebarLinks(steam64);
   },
 });
@@ -76,7 +73,7 @@ function buildIds(steam64: string): SteamIdEntry[] {
 // Header button
 // ---------------------------------------------------------------------------
 
-function addSteamIdButton(ids: SteamIdEntry[]) {
+function addSteamIdButton(ids: SteamIdEntry[], steam64: string) {
   if (document.getElementById("tf2trader_steamid_btn")) return;
 
   const actionsEl = document.querySelector<HTMLElement>(
@@ -94,7 +91,7 @@ function addSteamIdButton(ids: SteamIdEntry[]) {
   btn.appendChild(btnSpan);
   btn.addEventListener("click", (e) => {
     e.preventDefault();
-    openModal(ids);
+    openModal(ids, steam64);
   });
   actionsEl.appendChild(btn);
 }
@@ -103,7 +100,7 @@ function addSteamIdButton(ids: SteamIdEntry[]) {
 // Modal
 // ---------------------------------------------------------------------------
 
-function openModal(ids: SteamIdEntry[]) {
+function openModal(ids: SteamIdEntry[], steam64: string) {
   document.getElementById("tf2trader_modal_overlay")?.remove();
 
   const overlay = document.createElement("div");
@@ -169,6 +166,58 @@ function openModal(ids: SteamIdEntry[]) {
   });
   closeBtn.addEventListener("click", () => overlay.remove());
   modal.appendChild(closeBtn);
+
+  // Profile links row
+  const linksRow = document.createElement("div");
+  Object.assign(linksRow.style, {
+    display: "flex",
+    gap: "8px",
+    marginBottom: "16px",
+  } satisfies Partial<CSSStyleDeclaration>);
+
+  const PROFILE_LINKS = [
+    { label: "rep.tf", url: `https://rep.tf/${steam64}` },
+    { label: "backpack.tf", url: `https://backpack.tf/profiles/${steam64}` },
+  ];
+
+  for (const site of PROFILE_LINKS) {
+    const a = document.createElement("a");
+    a.href = site.url;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.textContent = site.label;
+    Object.assign(a.style, {
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "5px",
+      background: "#2a475e",
+      color: "#c6d4df",
+      fontSize: "13px",
+      padding: "6px 12px",
+      borderRadius: "3px",
+      textDecoration: "none",
+      transition: "background 0.15s",
+    } satisfies Partial<CSSStyleDeclaration>);
+    a.addEventListener("mouseenter", () => {
+      a.style.background = "#4b619a";
+    });
+    a.addEventListener("mouseleave", () => {
+      a.style.background = "#2a475e";
+    });
+
+    // Arrow icon
+    const arrow = document.createElement("span");
+    arrow.textContent = "↗";
+    Object.assign(arrow.style, {
+      fontSize: "11px",
+      opacity: "0.7",
+    } satisfies Partial<CSSStyleDeclaration>);
+    a.appendChild(arrow);
+
+    linksRow.appendChild(a);
+  }
+
+  modal.appendChild(linksRow);
 
   // ID rows
   for (const { label, value } of ids) {
