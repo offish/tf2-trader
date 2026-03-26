@@ -1,3 +1,6 @@
+import { getEffectID } from "@/utils";
+import { getSettings } from "@/utils/settings";
+
 const parseItemSku = (el: HTMLElement): string | null => {
   const defindex = el.dataset.defindex;
   if (!defindex) return null;
@@ -42,7 +45,10 @@ export default defineContentScript({
     "*://scrap.tf/unusuals*",
   ],
   runAt: "document_idle",
-  main() {
+  async main() {
+    const settings = await getSettings();
+    if (!settings.sites.scrapTf) return;
+
     const handleContextMenu = (e: MouseEvent) => {
       const item = (e.target as HTMLElement).closest<HTMLElement>(
         ".item.hoverable",

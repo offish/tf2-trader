@@ -7,13 +7,17 @@ import {
   getPartnerID,
   getOfferID,
 } from "@/utils/offers";
+import { getSettings } from "@/utils/settings";
 
 export default defineContentScript({
   matches: [
     "https://steamcommunity.com/id/*/tradeoffers*",
     "https://steamcommunity.com/profiles/*/tradeoffers*",
   ],
-  main() {
+  async main() {
+    const settings = await getSettings();
+    if (!settings.sites.steamTradeOffers) return;
+
     const REPORT_PATTERN = /ReportTradeScam\( ?'(\d{17})', ?"(.*)"\ ?\)/;
     const BUTTON_CONFIGS: ButtonConfig[] = [
       {

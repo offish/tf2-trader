@@ -1,316 +1,18 @@
-import { ParsedItem, SteamRgEntry } from "@/types";
+import { renderValuePanel, startLiveValuePanel } from "@/utils/trade-panel";
+import { getSettingsFromBridge } from "@/utils/settings-bridge";
 
 export default defineContentScript({
   matches: ["https://steamcommunity.com/tradeoffer/new*"],
   world: "MAIN",
   runAt: "document_idle",
   async main() {
-    const params = new URLSearchParams(location.search);
+    const settings = await getSettingsFromBridge();
+    if (!settings.sites.steamTradeOfferNew) return;
 
-    // -------------------------------------------------------------------------
-    // PriceDB helpers — defined here so they run on ALL tradeoffer/new pages,
-    // not just listing auto-builds.
-    // -------------------------------------------------------------------------
+    const params = new URLSearchParams(location.search);
 
     function toTradeItem(assetId: string) {
       return { appid: 440, contextid: "2", amount: 1, assetid: assetId };
-    }
-
-    /** Metal (ref) value of each currency item. */
-    const CURRENCY_DEFINDEXES: Record<string, { keys: number; metal: number }> =
-      {
-        "5021": { keys: 1, metal: 0 }, // Mann Co. Supply Crate Key
-        "5000": { keys: 0, metal: 1 }, // Refined Metal
-        "5001": { keys: 0, metal: 1 / 3 }, // Reclaimed Metal
-        "5002": { keys: 0, metal: 1 / 9 }, // Scrap Metal
-      };
-
-    // Cache SKU prices for the lifetime of the page so repeated panel
-    // refreshes don't re-request the same items.
-    const priceCache = new Map<
-      string,
-      { keys: number; metal: number } | null
-    >();
-
-    // The content script runs in world:MAIN (Steam's page), which is bound by
-    // Steam's CSP — direct fetch() to pricedb.io is blocked.  Instead we post
-    // a message to the ISOLATED bridge script (tradeoffer-pricedb-bridge), which
-    // forwards the request through the background service worker.
-    async function fetchPricedbPrice(
-      sku: string,
-    ): Promise<{ keys: number; metal: number } | null> {
-      if (priceCache.has(sku)) return priceCache.get(sku)!;
-
-      const result = await new Promise<{ keys: number; metal: number } | null>(
-        (resolve) => {
-          const id = Math.random().toString(36).slice(2);
-          const timer = setTimeout(() => {
-            window.removeEventListener("message", handler);
-            resolve(null);
-          }, 5000);
-          const handler = (e: MessageEvent) => {
-            if (
-              e.data?.type === "tf2trader_pricedb_response" &&
-              e.data?.id === id
-            ) {
-              clearTimeout(timer);
-              window.removeEventListener("message", handler);
-              resolve(e.data.result ?? null);
-            }
-          };
-          window.addEventListener("message", handler);
-          window.postMessage(
-            { type: "tf2trader_pricedb_request", sku, id },
-            "*",
-          );
-        },
-      );
-
-      priceCache.set(sku, result);
-      return result;
-    }
-
-    /** Search pricedb by name — only used as a fallback when the SKU is incomplete.
-     *  Returns price + resolved SKU when there is exactly one matching result. */
-    async function fetchPricedbSearch(
-      query: string,
-    ): Promise<{ keys: number; metal: number; sku: string } | null> {
-      return new Promise((resolve) => {
-        const id = Math.random().toString(36).slice(2);
-        const timer = setTimeout(() => {
-          window.removeEventListener("message", handler);
-          resolve(null);
-        }, 5000);
-        const handler = (e: MessageEvent) => {
-          if (
-            e.data?.type === "tf2trader_pricedb_search_response" &&
-            e.data?.id === id
-          ) {
-            clearTimeout(timer);
-            window.removeEventListener("message", handler);
-            resolve(e.data.result ?? null);
-          }
-        };
-        window.addEventListener("message", handler);
-        window.postMessage(
-          { type: "tf2trader_pricedb_search_request", query, id },
-          "*",
-        );
-      });
-    }
-
-    async function sideValueInKeys(
-      assets: Array<{ assetid: string }>,
-      rgMap: Record<string, any>,
-      keyPriceRef: number,
-    ): Promise<{ total: number; missing: number; unpricedNames: string[] }> {
-      let totalKeys = 0;
-      let missing = 0;
-      const unpricedNames: string[] = [];
-      const fetches: Promise<void>[] = [];
-
-      for (const asset of assets) {
-        const desc = rgMap[asset.assetid];
-        if (!desc) {
-          missing++;
-          continue;
-        }
-
-        const defindex = getDefindexFromDesc(desc);
-
-        if (defindex && CURRENCY_DEFINDEXES[defindex]) {
-          const c = CURRENCY_DEFINDEXES[defindex];
-          totalKeys += c.keys + (keyPriceRef > 0 ? c.metal / keyPriceRef : 0);
-          continue;
-        }
-
-        if (!defindex) {
-          const name = desc.market_hash_name ?? desc.name ?? "Unknown";
-          unpricedNames.push(name);
-          missing++;
-          continue;
-        }
-
-        const attrs = getItemAttributes(desc);
-        const sku = buildSku(defindex, attrs);
-        console.log("[tf2-trader] SKU debug:", {
-          name: desc.market_hash_name ?? desc.name,
-          defindex,
-          attrs,
-          sku,
-        });
-
-        // Strip "Series #" → "#" so "Mann Co. Supply Crate Series #75"
-        // matches pricedb's canonical name "Mann Co. Supply Crate #75".
-        const itemName = (desc.market_hash_name ?? desc.name ?? "").replace(
-          /\bSeries\s+(?=#\d)/i,
-          "",
-        );
-
-        fetches.push(
-          fetchPricedbPrice(sku).then(async (price) => {
-            if (!price) {
-              // Fallback: search by name — handles crates where the series
-              // number was not available when building the SKU.
-              const found = await fetchPricedbSearch(itemName);
-              if (found) {
-                const resolved = { keys: found.keys, metal: found.metal };
-                priceCache.set(sku, resolved); // cache under original SKU
-                priceCache.set(found.sku, resolved); // and resolved SKU
-                console.log(
-                  `[tf2-trader] Search resolved ${sku} → ${found.sku}`,
-                );
-                totalKeys +=
-                  resolved.keys +
-                  (keyPriceRef > 0 ? resolved.metal / keyPriceRef : 0);
-              } else {
-                unpricedNames.push(itemName);
-                missing++;
-              }
-              return;
-            }
-            totalKeys +=
-              price.keys + (keyPriceRef > 0 ? price.metal / keyPriceRef : 0);
-          }),
-        );
-      }
-
-      await Promise.all(fetches);
-      return { total: totalKeys, missing, unpricedNames };
-    }
-
-    async function renderValuePanel(
-      giveAssets: Array<{ assetid: string }>,
-      recvAssets: Array<{ assetid: string }>,
-      giveRgMap: Record<string, any>,
-      recvRgMap: Record<string, any>,
-    ): Promise<void> {
-      const keyData = await fetchPricedbPrice("5021;6");
-      const keyPriceRef = keyData?.metal ?? 0;
-
-      const [giveVal, recvVal] = await Promise.all([
-        sideValueInKeys(giveAssets, giveRgMap, keyPriceRef),
-        sideValueInKeys(recvAssets, recvRgMap, keyPriceRef),
-      ]);
-
-      const fmtKeys = (v: { total: number }) => {
-        const rounded = Math.max(0, Math.round(v.total * 100) / 100) || 0;
-        return `${rounded} keys`;
-      };
-
-      const mkUnpricedSection = (names: string[], side: string) => {
-        if (names.length === 0) return "";
-        const items = names
-          .map((n) => `<li style="margin:0;padding:1px 0;">${n}</li>`)
-          .join("");
-        return `
-          <details style="margin-bottom:6px;">
-            <summary style="cursor:pointer;color:#8f98a0;font-size:11px;user-select:none;list-style:none;outline:none;">
-              ${side}: ${names.length} unpriced item${names.length > 1 ? "s" : ""} ▸
-            </summary>
-            <ul style="margin:4px 0 0 8px;padding:0;color:#8f98a0;font-size:11px;list-style:disc;">${items}</ul>
-          </details>
-        `;
-      };
-
-      const existing = document.getElementById("tf2trader-value-panel");
-      if (existing) existing.remove();
-
-      const panel = document.createElement("div");
-      panel.id = "tf2trader-value-panel";
-      panel.style.cssText = [
-        "position:fixed",
-        "bottom:20px",
-        "right:20px",
-        "background:#1d1d1d",
-        "border:1px solid #3d3d3e",
-        "border-radius:5px",
-        "color:#c6d4df",
-        "font-size:12px",
-        "font-family:'Motiva Sans',Arial,sans-serif",
-        "padding:12px 16px",
-        "z-index:99999",
-        "min-width:220px",
-        "box-shadow:0 4px 16px rgba(0,0,0,0.7)",
-        "line-height:1.5",
-      ].join(";");
-
-      const hasUnpriced =
-        giveVal.unpricedNames.length > 0 || recvVal.unpricedNames.length > 0;
-
-      panel.innerHTML = `
-        <div style="display:flex;align-items:center;gap:6px;font-weight:bold;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #3d3d3e;color:#67D35E;font-size:13px;">
-          Value Estimate
-        </div>
-        <div style="display:flex;justify-content:space-between;gap:16px;margin-bottom:4px;">
-          <span style="color:#8f98a0;">You give</span>
-          <strong style="color:#fff;">${fmtKeys(giveVal)}</strong>
-        </div>
-        <div style="display:flex;justify-content:space-between;gap:16px;margin-bottom:${hasUnpriced ? "10" : "8"}px;">
-          <span style="color:#8f98a0;">You receive</span>
-          <strong style="color:#fff;">${fmtKeys(recvVal)}</strong>
-        </div>
-        ${hasUnpriced ? `<div style="border-top:1px solid #3d3d3e;padding-top:8px;margin-bottom:6px;">${mkUnpricedSection(giveVal.unpricedNames, "Giving")}${mkUnpricedSection(recvVal.unpricedNames, "Receiving")}</div>` : ""}
-        <div style="font-size:11px;color:#8f98a0;padding-top:6px;border-top:1px solid #3d3d3e;">
-          via <a href="https://pricedb.io" target="_blank" rel="noopener" style="color:#67C1F5;text-decoration:none;">PriceDB.io</a>
-        </div>
-      `;
-
-      document.body.appendChild(panel);
-    }
-
-    // Watches both trade-slot containers and refreshes the panel whenever items
-    // are added or removed — works on any tradeoffer/new page.
-    function startLiveValuePanel(): void {
-      const win = window as any;
-      let debounce: ReturnType<typeof setTimeout> | null = null;
-
-      const refresh = async () => {
-        const status = win.g_rgCurrentTradeStatus;
-        if (!status) return;
-
-        const myAssets = (status.me?.assets ?? []) as Array<{
-          assetid: string;
-        }>;
-        const theirAssets = (status.them?.assets ?? []) as Array<{
-          assetid: string;
-        }>;
-
-        if (myAssets.length === 0 && theirAssets.length === 0) {
-          document.getElementById("tf2trader-value-panel")?.remove();
-          return;
-        }
-
-        const myInv: Record<string, any> =
-          win.UserYou?.rgContexts?.["440"]?.["2"]?.inventory?.rgInventory ?? {};
-        const theirInv: Record<string, any> =
-          win.UserThem?.rgContexts?.["440"]?.["2"]?.inventory?.rgInventory ??
-          {};
-
-        try {
-          await renderValuePanel(myAssets, theirAssets, myInv, theirInv);
-        } catch (e) {
-          console.warn("[tf2-trader] Live value panel error:", e);
-        }
-      };
-
-      const schedule = () => {
-        if (debounce) clearTimeout(debounce);
-        debounce = setTimeout(refresh, 600);
-      };
-
-      const observe = () => {
-        const yours = document.getElementById("your_slots");
-        const theirs = document.getElementById("their_slots");
-        if (!yours || !theirs) {
-          setTimeout(observe, 500);
-          return;
-        }
-        const obs = new MutationObserver(schedule);
-        obs.observe(yours, { childList: true, subtree: true });
-        obs.observe(theirs, { childList: true, subtree: true });
-      };
-      observe();
     }
 
     // Start on every tradeoffer/new page — no listing params required.
@@ -484,17 +186,45 @@ export default defineContentScript({
       return { ref, rec, scrap };
     }
 
+    // Fetch asset IDs committed to pending outgoing trade offers so we can
+    // avoid re-selecting those same currency items.  Parses assetid patterns
+    // from Steam's embedded JavaScript on the sent-offers page.  Fails silently
+    // — if the page is unreachable or contains no parseable data the caller
+    // receives an empty set and falls through without disruption.
+    async function fetchSentOfferAssetIds(): Promise<Set<string>> {
+      try {
+        const res = await fetch(
+          "https://steamcommunity.com/tradeoffer/sentoffers/",
+          { credentials: "include" },
+        );
+        if (!res.ok) return new Set();
+        const html = await res.text();
+        const ids = new Set<string>();
+        for (const m of html.matchAll(/"assetid"\s*:\s*"(\d+)"/g)) {
+          ids.add(m[1]);
+        }
+        return ids;
+      } catch {
+        return new Set();
+      }
+    }
+
     function pickCurrencyItems(
       inventory: ParsedItem[],
       keys: number,
       metal: number,
+      lockedAssetIds: Set<string> = new Set(),
     ): ParsedItem[] {
-      const invKeys = inventory.filter(
-        (i) => i.name === "Mann Co. Supply Crate Key",
+      const avail = (items: ParsedItem[]) =>
+        items.filter((i) => !lockedAssetIds.has(i.id));
+      const invKeys = avail(
+        inventory.filter((i) => i.name === "Mann Co. Supply Crate Key"),
       );
-      const invRef = inventory.filter((i) => i.name === "Refined Metal");
-      const invRec = inventory.filter((i) => i.name === "Reclaimed Metal");
-      const invScrap = inventory.filter((i) => i.name === "Scrap Metal");
+      const invRef = avail(inventory.filter((i) => i.name === "Refined Metal"));
+      const invRec = avail(
+        inventory.filter((i) => i.name === "Reclaimed Metal"),
+      );
+      const invScrap = avail(inventory.filter((i) => i.name === "Scrap Metal"));
 
       if (invKeys.length < keys) throwError("Insufficient Keys in inventory");
 
@@ -565,6 +295,14 @@ export default defineContentScript({
         "items",
       );
 
+      console.log("[tf2-trader] Checking pending sent offers for locked items...");
+      const lockedAssetIds = await fetchSentOfferAssetIds();
+      if (lockedAssetIds.size > 0) {
+        console.log(
+          `[tf2-trader] ${lockedAssetIds.size} assetids locked in pending offers — will skip those.`,
+        );
+      }
+
       const itemsToGive: ReturnType<typeof toTradeItem>[] = [];
       const itemsToReceive: ReturnType<typeof toTradeItem>[] = [];
 
@@ -605,11 +343,12 @@ export default defineContentScript({
 
         itemsToReceive.push(toTradeItem(assetId!));
 
-        // Add our currency
+        // Add our currency — skip items already in pending sent offers
         const currencyItems = pickCurrencyItems(
           myInventory,
           keysNeeded,
           metalNeeded,
+          lockedAssetIds,
         );
         console.log(
           "[tf2-trader] Currency items to give:",

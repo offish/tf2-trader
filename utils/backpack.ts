@@ -118,12 +118,10 @@ export const processListings = () => {
         "a.listing__details__header",
       );
       if (headerLinkEl) {
-        const rawName = Array.from(headerLinkEl.childNodes)
-          .filter((n) => n.nodeType === Node.TEXT_NODE)
-          .map((n) => n.textContent?.trim())
-          .filter(Boolean)
-          .join(" ")
-          .trim();
+        // Clone so we can strip the buy/sell badge span without mutating the DOM.
+        const clone = headerLinkEl.cloneNode(true) as HTMLElement;
+        clone.querySelector(".text-sell, .text-buy")?.remove();
+        const rawName = clone.textContent?.replace(/\s+/g, " ").trim() || "";
         if (rawName) {
           (listingEl as any)._bp_item_name = rawName;
         }
@@ -165,9 +163,23 @@ export const processListings = () => {
 
         // Capture item name for both buy and sell — tradeoffer-new uses it
         // to locate the item in the appropriate inventory.
+        // The .listing-title h5 text nodes give the full display name including
+        // quality/killstreak prefixes (e.g. "Strange Specialized Killstreak Back
+        // Scratcher"). We read only text nodes to exclude <small> sub-info like
+        // "Parts Attached". dataset.name only holds the base item name.
+        const h5El = listingEl.querySelector(".listing-title h5");
+        const h5Name = h5El
+          ? Array.from(h5El.childNodes)
+              .filter((n) => n.nodeType === Node.TEXT_NODE)
+              .map((n) => n.textContent?.trim())
+              .filter(Boolean)
+              .join(" ")
+              .trim()
+          : "";
         const rawName =
-          itemEl.dataset.name ||
+          h5Name ||
           itemEl.dataset.item_name ||
+          itemEl.dataset.name ||
           itemEl.title ||
           listingEl
             .querySelector(

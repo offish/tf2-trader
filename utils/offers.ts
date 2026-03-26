@@ -55,7 +55,7 @@ export async function acceptOffer(
   );
 
   if (!response.ok) {
-    throw { status: response.status, statusText: response.statusText };
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
 
   return response.json();
@@ -78,13 +78,13 @@ export async function declineOffer(
   );
 
   if (!response.ok) {
-    throw { status: response.status, statusText: response.statusText };
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
 
   const body: DeclineOfferResponse = await response.json();
 
   if (body.tradeofferid !== offerID) {
-    throw body;
+    throw new Error(`Unexpected tradeofferid in decline response: ${body.tradeofferid}`);
   }
 
   return body;
