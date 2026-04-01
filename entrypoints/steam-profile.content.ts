@@ -1,7 +1,20 @@
 import { getSettingsFromBridge } from "@/utils/settings-bridge";
+import { addAttributesToElement } from "@/utils/inventory";
 
 export default defineContentScript({
   matches: ["*://steamcommunity.com/id/*", "*://steamcommunity.com/profiles/*"],
+  excludeMatches: [
+    "*://steamcommunity.com/id/*/inventory*",
+    "*://steamcommunity.com/id/*/friends*",
+    "*://steamcommunity.com/id/*/groups*",
+    "*://steamcommunity.com/id/*/games*",
+    "*://steamcommunity.com/id/*/reviews*",
+    "*://steamcommunity.com/profiles/*/inventory*",
+    "*://steamcommunity.com/profiles/*/friends*",
+    "*://steamcommunity.com/profiles/*/groups*",
+    "*://steamcommunity.com/profiles/*/games*",
+    "*://steamcommunity.com/profiles/*/reviews*",
+  ],
   world: "MAIN",
   runAt: "document_idle",
   async main() {
