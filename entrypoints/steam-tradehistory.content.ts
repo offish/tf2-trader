@@ -1,4 +1,5 @@
 import "@/styles/steam-tradehistory.css";
+import { getSettings } from "@/utils/settings";
 
 export default defineContentScript({
   matches: [
@@ -7,7 +8,10 @@ export default defineContentScript({
   ],
   runAt: "document_end",
 
-  main() {
+  async main() {
+    const settings = await getSettings();
+    if (!settings.sites.steamTradeHistory) return;
+
     interface ItemDetails {
       count: number;
       links: string[];

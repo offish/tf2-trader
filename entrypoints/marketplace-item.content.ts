@@ -1,9 +1,13 @@
 import { QUALITY_NAMES, KILLSTREAK_TIER_NAMES } from "@/utils/data";
+import { getSettings } from "@/utils/settings";
 
 export default defineContentScript({
   matches: ["*://marketplace.tf/items/*"],
   runAt: "document_idle",
-  main() {
+  async main() {
+    const settings = await getSettings();
+    if (!settings.sites.marketplace) return;
+
     const injectOldButton = () => {
       const bpButtons = document.querySelectorAll<HTMLAnchorElement>(
         "#btnBackpackTFStats:not(.processed)",

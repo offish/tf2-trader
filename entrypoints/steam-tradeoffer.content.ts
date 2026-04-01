@@ -10,6 +10,7 @@ import {
 } from "@/utils/tradeoffer";
 import { getEffectURL } from "@/utils";
 import { SteamItem } from "@/types";
+import { getSettingsFromBridge } from "@/utils/settings-bridge";
 
 const W = window as any;
 
@@ -17,7 +18,10 @@ export default defineContentScript({
   matches: ["*://steamcommunity.com/tradeoffer/*"],
   world: "MAIN",
   runAt: "document_end",
-  main() {
+  async main() {
+    const settings = await getSettingsFromBridge();
+    if (!settings.sites.steamTradeOffer) return;
+
     waitForSteamGlobals(() => {
       try {
         initEnhancer();

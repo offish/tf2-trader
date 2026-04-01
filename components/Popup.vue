@@ -15,7 +15,7 @@ defineProps({
       Thank you for using this extension!<br />
       Your support helps keep it free.
     </p>
-    <a href="https://discord.gg/NBTFWQMcC6" target="_blank">Join the Discord</a>
+    <a href="https://pricedb.io/discord" target="_blank">Join the Discord</a>
     <br /><br />
     <a
       href="https://steamcommunity.com/tradeoffer/new/?partner=293059984&token=0-l_idZR"

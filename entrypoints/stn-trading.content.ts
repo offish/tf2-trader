@@ -1,7 +1,12 @@
+import { getSettings } from "@/utils/settings";
+
 export default defineContentScript({
   matches: ["*://*.stntrading.eu/*"],
   runAt: "document_idle",
-  main() {
+  async main() {
+    const settings = await getSettings();
+    if (!settings.sites.stnTrading) return;
+
     let firstSelected: HTMLElement | null = null;
 
     const getInventoryItems = (): HTMLElement[] => {

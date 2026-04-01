@@ -4,10 +4,25 @@
 
 <h1 align="center">TF2 Trader</h1>
 
-<p align="center">
-  Extension for Team Fortress 2 Trading.<br>
-  Built using WXT and Vue 3.
-</p>
+<div align="center">
+  <a href="https://github.com/offish/tf2-trader/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/offish/tf2-trader.svg" />
+  </a>
+  <a href="https://github.com/offish/tf2-trader/issues">
+    <img src="https://img.shields.io/github/issues/offish/tf2-trader.svg" />
+  </a>
+  <a href="https://github.com/offish/tf2-trader">
+    <img src="https://img.shields.io/github/repo-size/offish/tf2-trader.svg" />
+  </a>
+  <a href="https://pricedb.io/discord">
+    <img src="https://img.shields.io/discord/1419683838002593814?color=7289da&label=Discord&logo=discord" />
+  </a>
+
+<br><br>
+Extension for Team Fortress 2 Trading.<br>
+Built using WXT and Vue 3.
+
+</div>
 
 <p align="center">
   <a href="https://chromewebstore.google.com/detail/tf2-trader/gmicpekfpbikhibodgokfpghadkclhoe">
@@ -92,6 +107,15 @@ This will also have hot reloads. To select the extension navigate to the folder 
 ### BackpackTF Stats
 
 ![Trade History](/.github/images/backpack-stats.png)
+
+## Affiliate Disclosure
+
+Some links injected by this extension on Steam Community Market listing pages
+(Skinport, Tradeit.gg, ManncoStore, Merchant.TF, CS.TRADE, SkinsCash) include
+referral or affiliate codes. Clicking these links may result in a commission
+being earned by contributors to this project. The links are clearly presented
+as alternative marketplace options and do not affect any prices shown to the
+user.
 
 ## Acknowledgements
 

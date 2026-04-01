@@ -1,8 +1,12 @@
 import { parseItem, getKeysListedValue, refinedToKeys } from "@/utils/backpack";
+import { getSettings } from "@/utils/settings";
 
 export default defineContentScript({
   matches: ["*://backpack.tf/id/*", "*://backpack.tf/profiles/*"],
   async main() {
+    const settings = await getSettings();
+    if (!settings.sites.backpackProfile) return;
+
     const STORAGE_KEY = "getInventory.key_price";
     let keyValue: number =
       (await storage.getItem<number>(`local:${STORAGE_KEY}`)) ?? 0;
