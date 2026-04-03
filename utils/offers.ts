@@ -84,7 +84,40 @@ export async function declineOffer(
   const body: DeclineOfferResponse = await response.json();
 
   if (body.tradeofferid !== offerID) {
-    throw new Error(`Unexpected tradeofferid in decline response: ${body.tradeofferid}`);
+    throw new Error(
+      `Unexpected tradeofferid in decline response: ${body.tradeofferid}`,
+    );
+  }
+
+  return body;
+}
+
+export async function cancelOffer(
+  offerID: string,
+): Promise<DeclineOfferResponse> {
+  const sessionID = getSessionID();
+
+  const response = await fetch(
+    `https://steamcommunity.com/tradeoffer/${offerID}/cancel`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      },
+      body: `sessionid=${sessionID}`,
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  }
+
+  const body: DeclineOfferResponse = await response.json();
+
+  if (body.tradeofferid !== offerID) {
+    throw new Error(
+      `Unexpected tradeofferid in cancel response: ${body.tradeofferid}`,
+    );
   }
 
   return body;

@@ -20,7 +20,6 @@ export default defineContentScript({
     const settings = await getSettingsFromBridge();
     if (!settings.sites.steamProfile) return;
 
-    // Only run on the profile root, not on sub-pages like /inventory/, /tradeoffers/, etc.
     const pathParts = window.location.pathname.split("/").filter(Boolean);
     if (pathParts.length > 2) return;
 
@@ -263,7 +262,7 @@ function addSidebarLinks(steam64: string) {
   if (!linksContainer) return;
 
   const SITES: { label: string; url: string }[] = [
-    { label: "backpack.tf", url: `https://backpack.tf/profiles/${steam64}` },
+    { label: "backpack.tf", url: `https://backpack.tf/u/${steam64}` },
     { label: "rep.tf", url: `https://rep.tf/${steam64}` },
     { label: "posts.tf", url: `https://posts.tf/users/${steam64}` },
     {
