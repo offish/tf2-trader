@@ -1,5 +1,4 @@
 import { processListings } from "@/utils/backpack";
-import { createPricedbGraphIframe } from "@/utils/graph";
 import { getSettings } from "@/utils/settings";
 import { TAG_TO_QUALITY } from "@/utils/data";
 
@@ -77,7 +76,9 @@ export default defineContentScript({
       btn.addEventListener("click", () => {
         navigator.clipboard.writeText(`!add sku=${sku}`);
         btn.textContent = "Copied!";
-        setTimeout(() => { btn.textContent = "Copy !add"; }, 1500);
+        setTimeout(() => {
+          btn.textContent = "Copy !add";
+        }, 1500);
       });
 
       const title = document.querySelector<HTMLElement>(
@@ -97,7 +98,9 @@ export default defineContentScript({
       if (qualityId === undefined) return null;
       const lastPart = parts[parts.length - 1];
       const effectId =
-        parts.length >= 6 && /^\d+$/.test(lastPart) ? parseInt(lastPart, 10) : null;
+        parts.length >= 6 && /^\d+$/.test(lastPart)
+          ? parseInt(lastPart, 10)
+          : null;
       const result = (await browser.runtime.sendMessage({
         type: "pricedb_search",
         query: itemName,
