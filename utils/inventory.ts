@@ -75,7 +75,8 @@ export const getItemAttributes = (item: SteamItem): ResolvedItemAttributes => {
       // Detect tier from market_hash_name / name so the SKU is kt-1/kt-2/kt-3.
       const itemName: string = item.market_hash_name || item.name || "";
       if (/Professional Killstreak/i.test(itemName)) attributes.killstreak = 3;
-      else if (/Specialized Killstreak/i.test(itemName)) attributes.killstreak = 2;
+      else if (/Specialized Killstreak/i.test(itemName))
+        attributes.killstreak = 2;
       else attributes.killstreak = 1;
     }
   });
@@ -85,9 +86,17 @@ export const getItemAttributes = (item: SteamItem): ResolvedItemAttributes => {
   if (item.tags) {
     const seriesTag = item.tags.find((tag: any) => tag.category === "Series");
     if (seriesTag) {
-      const fromLabel = (seriesTag.localized_tag_name as string ?? "").match(/#(\d+)/);
-      const fromInternal = (seriesTag.internal_name as string ?? "").match(/(\d+)$/);
-      const num = fromLabel ? parseInt(fromLabel[1]) : fromInternal ? parseInt(fromInternal[1]) : null;
+      const fromLabel = ((seriesTag.localized_tag_name as string) ?? "").match(
+        /#(\d+)/,
+      );
+      const fromInternal = ((seriesTag.internal_name as string) ?? "").match(
+        /(\d+)$/,
+      );
+      const num = fromLabel
+        ? parseInt(fromLabel[1])
+        : fromInternal
+          ? parseInt(fromInternal[1])
+          : null;
       if (num) attributes.series = num;
     }
   }
@@ -103,7 +112,10 @@ export const getItemAttributes = (item: SteamItem): ResolvedItemAttributes => {
   return attributes;
 };
 
-export const addAttributesToElement = (itemEl: HTMLElement, item: SteamItem) => {
+export const addAttributesToElement = (
+  itemEl: HTMLElement,
+  item: SteamItem,
+) => {
   if (itemEl.hasAttribute("data-checked")) return;
 
   const attrs = getItemAttributes(item);
@@ -161,7 +173,10 @@ export const addAttributesToElement = (itemEl: HTMLElement, item: SteamItem) => 
  * Builds a PriceDB/tf2-schema SKU string from a defindex and parsed item attributes.
  * e.g. "5021;6", "725;5;u703", "5021;6;uncraftable"
  */
-export const buildSku = (defindex: string | number, item: ResolvedItemAttributes): string => {
+export const buildSku = (
+  defindex: string | number,
+  item: ResolvedItemAttributes,
+): string => {
   const parts: (string | number)[] = [defindex, item.quality ?? 6];
   if (item.uncraft) parts.push("uncraftable");
   if (item.killstreak) parts.push(`kt-${item.killstreak}`);
