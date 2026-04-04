@@ -1,9 +1,13 @@
+import { getSettings } from "@/utils/settings";
+
 export default defineContentScript({
   // Browser extension match patterns do NOT support hash (#) fragments.
   // "*://marketplace.tf/dashboard#sales" will never match anything.
   matches: ["*://marketplace.tf/dashboard*"],
   runAt: "document_idle",
-  main() {
+  async main() {
+    const settings = await getSettings();
+    if (!settings.sites.marketplace) return;
     if (!location.hash.includes("sales")) return;
 
     const COLOR_TO_QUALITY: Record<string, string> = {
