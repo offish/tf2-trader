@@ -263,6 +263,10 @@ function addSidebarLinks(steam64: string) {
 
   const SITES: { label: string; url: string }[] = [
     { label: "backpack.tf", url: `https://backpack.tf/u/${steam64}` },
+    {
+      label: "next.backpack.tf",
+      url: `https://next.backpack.tf/profiles/${steam64}/user`,
+    },
     { label: "rep.tf", url: `https://rep.tf/${steam64}` },
     { label: "posts.tf", url: `https://posts.tf/users/${steam64}` },
     {
