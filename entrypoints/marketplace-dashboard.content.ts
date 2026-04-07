@@ -8,7 +8,8 @@ export default defineContentScript({
   async main() {
     const settings = await getSettings();
     if (!settings.sites.marketplace) return;
-    if (!location.hash.includes("sales")) return;
+    if (!location.hash.includes("sales") || !location.hash.includes("items"))
+      return;
 
     const COLOR_TO_QUALITY: Record<string, string> = {
       "#B2B2B2": "Normal",

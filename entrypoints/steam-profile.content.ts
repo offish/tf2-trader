@@ -268,6 +268,7 @@ function addSidebarLinks(steam64: string) {
       url: `https://next.backpack.tf/profiles/${steam64}/user`,
     },
     { label: "rep.tf", url: `https://rep.tf/${steam64}` },
+    { label: "steamhistory", url: `https://steamhistory.net/id/${steam64}` },
     { label: "posts.tf", url: `https://posts.tf/users/${steam64}` },
     {
       label: "stntrading.eu",
