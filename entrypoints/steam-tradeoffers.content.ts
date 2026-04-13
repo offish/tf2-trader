@@ -3,10 +3,12 @@ import { ButtonConfig, AggregatedItem } from "@/types";
 import {
   acceptOffer,
   declineOffer,
+  cancelOffer,
   isOfferActive,
   getPartnerID,
   getOfferID,
 } from "@/utils/offers";
+
 import { getSettings } from "@/utils/settings";
 
 export default defineContentScript({
@@ -100,7 +102,7 @@ export default defineContentScript({
       });
     }
 
-    function replaceDeclineButton(offerEl: HTMLElement): void {
+    function replaceDeclineButton(offerEl: HTMLElement, isSent: boolean): void {
       const actionsEl = offerEl.querySelector<HTMLElement>(
         ".tradeoffer_footer_actions",
       );
@@ -122,10 +124,15 @@ export default defineContentScript({
 
       newDeclineSpan.addEventListener("click", async () => {
         try {
-          await declineOffer(offerID);
-          resolveBanner(offerEl, "Trade Declined");
+          if (isSent) {
+            await cancelOffer(offerID);
+            resolveBanner(offerEl, "Trade Cancelled");
+          } else {
+            await declineOffer(offerID);
+            resolveBanner(offerEl, "Trade Declined");
+          }
         } catch (err) {
-          console.error("Decline offer failed:", err);
+          console.error("Decline/cancel offer failed:", err);
           resolveBanner(
             offerEl,
             "Could not decline offer, most likely Steam is having problems.",
@@ -293,6 +300,8 @@ export default defineContentScript({
     }
 
     function enhanceTradeOffers(): void {
+      const isSent = window.location.pathname.includes("/tradeoffers/sent");
+
       const offers = Array.from(
         document.getElementsByClassName("tradeoffer"),
       ) as HTMLElement[];
@@ -300,8 +309,8 @@ export default defineContentScript({
       for (const offerEl of offers) {
         addUserButtons(offerEl);
         summarizeItemLists(offerEl);
-        addAcceptButton(offerEl);
-        replaceDeclineButton(offerEl);
+        if (!isSent) addAcceptButton(offerEl);
+        replaceDeclineButton(offerEl, isSent);
       }
     }
 

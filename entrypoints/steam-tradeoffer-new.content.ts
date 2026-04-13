@@ -61,9 +61,12 @@ export default defineContentScript({
       throw new Error("Timeout waiting for Steam globals");
     }
 
-    function throwError(msg: string): never {
+    function throwError(msg: string, showAlert: boolean = true): never {
       const itemLabel = itemName || forItem || "item";
-      alert(`TF2 Trader: Could not build trade for "${itemLabel}": ${msg}`);
+
+      if (showAlert)
+        alert(`TF2 Trader: Could not build trade for "${itemLabel}": ${msg}`);
+
       throw new Error(msg);
     }
 
@@ -407,10 +410,13 @@ export default defineContentScript({
             decodedName,
           );
           const theirItem = theirInventory.find((i) => i.name === decodedName);
+
           if (!theirItem)
             throwError(
               `Could not find "${decodedName}" in partner's inventory`,
+              false,
             );
+
           assetId = theirItem.id;
           console.log(
             "[tf2-trader] Sell listing — receiving assetId from name lookup:",
@@ -450,8 +456,13 @@ export default defineContentScript({
           decodedName,
         );
         const ourItem = myInventory.find((i) => i.name === decodedName);
+
         if (!ourItem)
-          throwError(`Could not find "${decodedName}" in your inventory`);
+          throwError(
+            `Could not find "${decodedName}" in your inventory`,
+            false,
+          );
+
         console.log("[tf2-trader] Found item to give:", ourItem);
 
         itemsToGive.push(toTradeItem(ourItem.id));

@@ -8,7 +8,15 @@ import { getSettings } from "@/utils/settings";
  * This script responds: { type: "tf2trader_settings_response", id, settings }
  */
 export default defineContentScript({
-  matches: ["<all_urls>"],
+  matches: [
+    "*://steamcommunity.com/*",
+    "*://backpack.tf/*",
+    "*://next.backpack.tf/*",
+    "*://marketplace.tf/*",
+    "*://stntrading.eu/*",
+    "*://scrap.tf/*",
+    "*://pricedb.io/*",
+  ],
   world: "ISOLATED",
   runAt: "document_start",
 
@@ -19,7 +27,10 @@ export default defineContentScript({
 
       const id = e.data?.id as string | undefined;
       const settings = await getSettings();
-      window.postMessage({ type: "tf2trader_settings_response", id, settings }, "*");
+      window.postMessage(
+        { type: "tf2trader_settings_response", id, settings },
+        "*",
+      );
     });
   },
 });

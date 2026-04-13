@@ -1,5 +1,4 @@
 import { getSettingsFromBridge } from "@/utils/settings-bridge";
-import { addAttributesToElement } from "@/utils/inventory";
 
 export default defineContentScript({
   matches: ["*://steamcommunity.com/id/*", "*://steamcommunity.com/profiles/*"],
@@ -21,7 +20,6 @@ export default defineContentScript({
     const settings = await getSettingsFromBridge();
     if (!settings.sites.steamProfile) return;
 
-    // Only run on the profile root, not on sub-pages like /inventory/, /tradeoffers/, etc.
     const pathParts = window.location.pathname.split("/").filter(Boolean);
     if (pathParts.length > 2) return;
 
@@ -180,58 +178,6 @@ function openModal(ids: SteamIdEntry[], steam64: string) {
   closeBtn.addEventListener("click", () => overlay.remove());
   modal.appendChild(closeBtn);
 
-  // Profile links row
-  const linksRow = document.createElement("div");
-  Object.assign(linksRow.style, {
-    display: "flex",
-    gap: "8px",
-    marginBottom: "16px",
-  } satisfies Partial<CSSStyleDeclaration>);
-
-  const PROFILE_LINKS = [
-    { label: "rep.tf", url: `https://rep.tf/${steam64}` },
-    { label: "backpack.tf", url: `https://backpack.tf/profiles/${steam64}` },
-  ];
-
-  for (const site of PROFILE_LINKS) {
-    const a = document.createElement("a");
-    a.href = site.url;
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
-    a.textContent = site.label;
-    Object.assign(a.style, {
-      display: "inline-flex",
-      alignItems: "center",
-      gap: "5px",
-      background: "#2a475e",
-      color: "#c6d4df",
-      fontSize: "13px",
-      padding: "6px 12px",
-      borderRadius: "3px",
-      textDecoration: "none",
-      transition: "background 0.15s",
-    } satisfies Partial<CSSStyleDeclaration>);
-    a.addEventListener("mouseenter", () => {
-      a.style.background = "#4b619a";
-    });
-    a.addEventListener("mouseleave", () => {
-      a.style.background = "#2a475e";
-    });
-
-    // Arrow icon
-    const arrow = document.createElement("span");
-    arrow.textContent = "↗";
-    Object.assign(arrow.style, {
-      fontSize: "11px",
-      opacity: "0.7",
-    } satisfies Partial<CSSStyleDeclaration>);
-    a.appendChild(arrow);
-
-    linksRow.appendChild(a);
-  }
-
-  modal.appendChild(linksRow);
-
   // ID rows
   for (const { label, value } of ids) {
     const row = document.createElement("div");
@@ -316,14 +262,19 @@ function addSidebarLinks(steam64: string) {
   if (!linksContainer) return;
 
   const SITES: { label: string; url: string }[] = [
-    { label: "backpack.tf", url: `https://backpack.tf/profiles/${steam64}` },
-    { label: "rep.tf", url: `https://rep.tf/${steam64}` },
-    { label: "SteamRep", url: `https://steamrep.com/profiles/${steam64}` },
+    { label: "backpack.tf", url: `https://backpack.tf/u/${steam64}` },
     {
-      label: "marketplace.tf",
-      url: `https://marketplace.tf/seller/${steam64}`,
+      label: "next.backpack.tf",
+      url: `https://next.backpack.tf/profiles/${steam64}/user`,
     },
+    { label: "rep.tf", url: `https://rep.tf/${steam64}` },
+    { label: "steamhistory", url: `https://steamhistory.net/id/${steam64}` },
     { label: "posts.tf", url: `https://posts.tf/users/${steam64}` },
+    {
+      label: "stntrading.eu",
+      url: `https://stntrading.eu/profiles/${steam64}`,
+    },
+    { label: "mannco.store", url: `https://mannco.store/store/${steam64}` },
   ];
 
   const section = document.createElement("div");
