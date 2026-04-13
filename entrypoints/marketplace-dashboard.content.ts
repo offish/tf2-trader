@@ -8,7 +8,12 @@ export default defineContentScript({
   async main() {
     const settings = await getSettings();
     if (!settings.sites.marketplace) return;
-    if (!location.hash.includes("sales") || !location.hash.includes("items"))
+    if (
+      !location.hash.includes("sales") &&
+      !location.hash.includes("items") &&
+      !location.hash.includes("history") &&
+      !location.hash.includes("auctions")
+    )
       return;
 
     const COLOR_TO_QUALITY: Record<string, string> = {

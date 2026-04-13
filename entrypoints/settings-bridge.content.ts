@@ -9,13 +9,13 @@ import { getSettings } from "@/utils/settings";
  */
 export default defineContentScript({
   matches: [
-    "*://steamcommunity.com/",
-    "*://backpack.tf/",
-    "*://next.backpack.tf/",
-    "*://marketplace.tf/",
-    "*://stntrading.eu/",
-    "*://scrap.tf/",
-    "*://pricedb.io/",
+    "*://steamcommunity.com/*",
+    "*://backpack.tf/*",
+    "*://next.backpack.tf/*",
+    "*://marketplace.tf/*",
+    "*://stntrading.eu/*",
+    "*://scrap.tf/*",
+    "*://pricedb.io/*",
   ],
   world: "ISOLATED",
   runAt: "document_start",
